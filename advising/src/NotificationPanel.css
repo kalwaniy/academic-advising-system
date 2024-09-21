@@ -1,0 +1,38 @@
+.notification-panel {
+    background-color: #f9f9f9;
+    border-left: 1px solid #ddd;
+    padding: 20px;
+    width: 300px;
+    height: 100vh; /* Take full height of the viewport */
+    box-shadow: -1px 0 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .notification-panel h3 {
+    font-size: 20px;
+    margin-bottom: 20px;
+    color: #333;
+  }
+  
+  .notification-panel ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .notification-panel li {
+    background-color: #fff;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .notification-panel li:hover {
+    background-color: #f3f3f3;
+    cursor: pointer;
+  }
+  
+  .notification-panel p {
+    font-size: 14px;
+    color: #888;
+  }
+  
