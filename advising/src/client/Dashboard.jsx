@@ -1,7 +1,8 @@
+/* eslint-disable no-unused-vars */
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import NotificationPanel from './NotificationPanel'; // Import the notification panel
-import './Dashboard.css';
+import './styles/index.css';
 
 const sections = [
   { title: 'Prerequisite Waiver', icon: '📝', description: 'Click to proceed', link: '/prerequisite-waiver' },

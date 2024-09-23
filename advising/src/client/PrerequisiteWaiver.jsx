@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import './styles/index.css';
 
 function PrerequisiteWaiver() {
   const navigate = useNavigate();

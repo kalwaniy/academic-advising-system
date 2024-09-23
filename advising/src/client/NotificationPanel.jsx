@@ -1,5 +1,5 @@
 import React from 'react';
-import './NotificationPanel.css'; // For notification styles
+import './styles/index.css'; // For notification styles
 
 const notifications = [
   { id: 1, message: 'Your prerequisite waiver has been approved!' },
