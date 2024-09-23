@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,12 +8,68 @@ function PrerequisiteWaiver() {
     name: '',
     email: '',
     date: '',
-    reason: ''
+    reason: '',
+    classRequest: '',
+    seniorDesignRequest: '',
+    coopWaiver: '',
+    jdDocument: null,
   });
 
+  const classOptions = [
+    'MATH 101 - Section 1',
+    'MATH 101 - Section 2',
+    'NSSA 102 - Section 1',
+    'NSSA 102 - Section 2',
+    'GCIS 123 - Section 1',
+    'GCIS 123 - Section 2',
+    'GCIS 124 - Section 1',
+    'ISTE 140 - Section 1',
+    'ISTE 190 - Section 1',
+    'CSEC 102 - Section 1',
+    'CSEC 140 - Section 1',
+    'COMM 142 - Section 1',
+    'MATH 131 - Section 1',
+    'MATH 161 - Section 1',
+    'STAT 145 - Section 1',
+    'NSSA 220 - Section 1',
+    'NSSA 241 - Section 1',
+    'NSSA 221 - Section 1',
+    'ISTE 230 - Section 1',
+    'ISTE 240 - Section 1',
+    'ISTE 99 - Section 1',
+    'Coop Seminar - Section 1',
+    'ISTE 260 - Section 1',
+    'ISTE 430 - Section 1',
+    'ISTE 500 - Section 1',
+    'ISTE 501 - Section 1',
+    'COMM 203 - Section 1',
+    'NSSA 242 - Section 1',
+    'NSSA 244 - Section 1',
+    'NSSA 370 - Section 1',
+    'NSSA 322 - Section 1',
+    'NSSA 245 - Section 1',
+    'NSSA 441 - Section 1',
+    'NSSA 443 - Section 1',
+    'NSSA 341 - Section 1',
+    'ISTE 470 - Section 1',
+    'ISTE 436 - Section 1',
+    'ISTE 330 - Section 1',
+    'ISTE 262 - Section 1',
+    'SWEN 383 - Section 1',
+    'ISTE 438 - Section 1',
+    'ISTE 434 - Section 1',
+    'ISTE 340 - Section 1',
+    'ISTE 432 - Section 1',
+    'ISTE 341 - Section 1',
+  ];
+
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    const { name, value, type, files } = e.target;
+    if (type === 'file') {
+      setFormData({ ...formData, [name]: files[0] });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const handleSubmit = (e) => {
@@ -65,8 +122,65 @@ function PrerequisiteWaiver() {
               <input type="date" name="date" value={formData.date} onChange={handleInputChange} />
             </label>
             <label>
-              Reason for waiver:
-              <textarea name="reason" value={formData.reason} onChange={handleInputChange}></textarea>
+              Class Requested:
+              <input
+                type="text"
+                list="classOptions"
+                name="classRequest"
+                value={formData.classRequest}
+                onChange={handleInputChange}
+              />
+              <datalist id="classOptions">
+                {classOptions.map((classOption, index) => (
+                  <option key={index} value={classOption} />
+                ))}
+              </datalist>
+            </label>
+            <label>
+              Reason for asking pre-requisite:
+              <textarea name="reason" value={formData.reason} onChange={handleInputChange} />
+            </label>
+            <label>
+              Please explain in detail why you feel you are prepared to take this course without having completed the pre- or co-requisite(s):
+              <textarea name="detailedReason" value={formData.detailedReason} onChange={handleInputChange}></textarea>
+            </label>
+            <label>
+              Is this form a request for a prerequisite waiver to take Senior Design I (EEEE 497/ISEE 497/MECE 497) or MECE 348 Contemporary Issues?
+              <input
+                type="radio"
+                name="seniorDesignRequest"
+                value="yes"
+                checked={formData.seniorDesignRequest === 'yes'}
+                onChange={handleInputChange}
+              /> Yes
+              <input
+                type="radio"
+                name="seniorDesignRequest"
+                value="no"
+                checked={formData.seniorDesignRequest === 'no'}
+                onChange={handleInputChange}
+              /> No
+            </label>
+            <label>
+              Are you applying for a waiver for COOP 1?
+              <input
+                type="radio"
+                name="coopWaiver"
+                value="yes"
+                checked={formData.coopWaiver === 'yes'}
+                onChange={handleInputChange}
+              /> Yes
+              <input
+                type="radio"
+                name="coopWaiver"
+                value="no"
+                checked={formData.coopWaiver === 'no'}
+                onChange={handleInputChange}
+              /> No
+            </label>
+            <label>
+              Upload JD (PDF only):
+              <input type="file" name="jdDocument" accept=".pdf" onChange={handleInputChange} />
             </label>
             <button type="submit">Submit</button>
           </form>
