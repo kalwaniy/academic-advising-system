@@ -1,7 +1,6 @@
-/* eslint-disable no-unused-vars */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './styles/index.css'; 
+import '../styles/index.css';
 
 function LoginPage() {
   const [username, setUsername] = useState('');
@@ -9,14 +8,34 @@ function LoginPage() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!username || !password) {
       setError('Username and password are required');
     } else {
-      console.log('Logging in with', { username, password });
-      setError('');
-      navigate('/dashboard'); // Navigate to the dashboard after login
+      try {
+        const response = await fetch('http://localhost:5000/api/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username, password }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          console.log('Login successful:', data);
+          setError('');
+          localStorage.setItem('token', data.token); // Save the token
+          navigate('/dashboard'); // Navigate to the dashboard after login
+        } else {
+          setError(data.error || 'Login failed');
+        }
+      } catch (err) {
+        console.error('Login error:', err);
+        setError('Server error');
+      }
     }
   };
 
@@ -30,7 +49,7 @@ function LoginPage() {
       {/* Login form */}
       <div className="login-box">
         <h1 className="logo">RIT</h1>
-        <h2>Login </h2>
+        <h2>Login</h2>
         <form onSubmit={handleSubmit}>
           {error && <p className="error">{error}</p>}
           <div className="form-group">

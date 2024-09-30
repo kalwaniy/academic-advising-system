@@ -5,7 +5,7 @@ import NotificationPanel from './NotificationPanel'; // Import the notification 
 import './styles/index.css';
 
 const sections = [
-  { title: 'Prerequisite Waiver', icon: '📝', description: 'Click to proceed', link: '/prerequisite-waiver' },
+  { title: 'Prerequisite Waiver', icon: '📝', description: 'Click to proceed', link: '/PrerequisiteWaiver' },
   { title: 'Overloading', icon: '📊', description: '' },
   { title: 'Tasks', icon: '⚠️', description: 'No current tasks' },
 ];
