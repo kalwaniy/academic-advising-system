@@ -6,9 +6,10 @@ import './styles/index.css';
 
 const sections = [
   { title: 'Prerequisite Waiver', icon: '📝', description: 'Click to proceed', link: '/PrerequisiteWaiver' },
-  { title: 'Overloading', icon: '📊', description: '' },
+  { title: 'StudentInfo',icon: '🎓', description: 'View student information', link: '/StudentInfo' },  
   { title: 'Tasks', icon: '⚠️', description: 'No current tasks' },
 ];
+
 
 function Dashboard() {
   const navigate = useNavigate();

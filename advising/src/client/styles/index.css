@@ -590,3 +590,45 @@ button[type="submit"]:hover {
   }
   
 
+  .student-info-page {
+    padding: 2rem;
+    background-color: #f4f4f4; /* Light background for contrast */
+  }
+  
+  .student-info-page h1 {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 20px;
+  }
+  
+  .student-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  
+  .student-table th,
+  .student-table td {
+    border: 1px solid var(--border-color);
+    padding: 12px;
+    text-align: left;
+  }
+  
+  .student-table th {
+    background-color: var(--primary-color);
+    color: white;
+  }
+  
+  .student-table tr:nth-child(even) {
+    background-color: #f9f9f9; /* Alternating row color for better readability */
+  }
+  
+  .student-table tr:hover {
+    background-color: #f1f1f1; /* Highlight row on hover */
+  }
+  
+  .error {
+    color: var(--error-color);
+    margin-top: 1rem;
+    text-align: center;
+  }
