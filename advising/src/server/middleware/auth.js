@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import jwt from 'jsonwebtoken';
 import db from '../db/db.js'; 
 import 'dotenv/config'; 

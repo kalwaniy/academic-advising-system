@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './styles/index.css';
 
@@ -8,61 +8,26 @@ function PrerequisiteWaiver() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    date: '',
-    reason: '',
+    uid: '',
+    cgpa: '',
+    term: '',
     classRequest: '',
+    reason: '',
+    detailedReason: '',
     seniorDesignRequest: '',
     coopWaiver: '',
     jdDocument: null,
   });
 
-  const classOptions = [
-    'MATH 101 - Section 1',
-    'MATH 101 - Section 2',
-    'NSSA 102 - Section 1',
-    'NSSA 102 - Section 2',
-    'GCIS 123 - Section 1',
-    'GCIS 123 - Section 2',
-    'GCIS 124 - Section 1',
-    'ISTE 140 - Section 1',
-    'ISTE 190 - Section 1',
-    'CSEC 102 - Section 1',
-    'CSEC 140 - Section 1',
-    'COMM 142 - Section 1',
-    'MATH 131 - Section 1',
-    'MATH 161 - Section 1',
-    'STAT 145 - Section 1',
-    'NSSA 220 - Section 1',
-    'NSSA 241 - Section 1',
-    'NSSA 221 - Section 1',
-    'ISTE 230 - Section 1',
-    'ISTE 240 - Section 1',
-    'ISTE 99 - Section 1',
-    'Coop Seminar - Section 1',
-    'ISTE 260 - Section 1',
-    'ISTE 430 - Section 1',
-    'ISTE 500 - Section 1',
-    'ISTE 501 - Section 1',
-    'COMM 203 - Section 1',
-    'NSSA 242 - Section 1',
-    'NSSA 244 - Section 1',
-    'NSSA 370 - Section 1',
-    'NSSA 322 - Section 1',
-    'NSSA 245 - Section 1',
-    'NSSA 441 - Section 1',
-    'NSSA 443 - Section 1',
-    'NSSA 341 - Section 1',
-    'ISTE 470 - Section 1',
-    'ISTE 436 - Section 1',
-    'ISTE 330 - Section 1',
-    'ISTE 262 - Section 1',
-    'SWEN 383 - Section 1',
-    'ISTE 438 - Section 1',
-    'ISTE 434 - Section 1',
-    'ISTE 340 - Section 1',
-    'ISTE 432 - Section 1',
-    'ISTE 341 - Section 1',
-  ];
+  const [courses, setCourses] = useState([]); // State to store fetched courses
+
+  // Fetch courses from the server on component mount
+  useEffect(() => {
+    fetch('/api/courses') // Make sure your backend route is correct
+      .then((res) => res.json())
+      .then((data) => setCourses(data))
+      .catch((err) => console.error('Error fetching courses:', err));
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value, type, files } = e.target;
@@ -75,21 +40,28 @@ function PrerequisiteWaiver() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Handle form submission logic
-    console.log('Form submitted:', formData);
-  };
+    const submitData = new FormData();
+    for (let key in formData) {
+      submitData.append(key, formData[key]);
+    }
 
-  const handleLogout = () => {
-    navigate('/LoginPage');
-  };
-
-  const navigateToDashboard = () => {
-    navigate('/dashboard');
+    fetch('/api/waiver', { // Adjust API endpoint if needed
+      method: 'POST',
+      body: submitData,
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          alert('Form submitted successfully!');
+        } else {
+          alert('Error submitting form.');
+        }
+      })
+      .catch((err) => console.error('Error submitting form:', err));
   };
 
   return (
     <div style={{ display: 'flex', height: '100vh' }}>
-      {/* Sidebar */}
       <div style={{ width: '200px', backgroundColor: '#f0f0f0', padding: '20px' }}>
         <ul style={{ listStyleType: 'none', padding: 0 }}>
           <li style={{ marginBottom: '10px' }}>Page 1</li>
@@ -98,29 +70,34 @@ function PrerequisiteWaiver() {
         </ul>
       </div>
 
-      {/* Main Content */}
       <div style={{ flexGrow: 1 }}>
-        {/* Navbar */}
         <div style={{ backgroundColor: '#FF5C00', color: '#fff', padding: '10px' }}>
-          <button onClick={navigateToDashboard} style={{ marginRight: '20px', backgroundColor: '#333', color: '#fff', border: 'none' }}>Home</button>
-          <button onClick={handleLogout} style={{ backgroundColor: '#333', color: '#fff', border: 'none' }}>Logout</button>
+          <button onClick={() => navigate('/dashboard')} style={{ marginRight: '20px', backgroundColor: '#333', color: '#fff', border: 'none' }}>Home</button>
+          <button onClick={() => navigate('/LoginPage')} style={{ backgroundColor: '#333', color: '#fff', border: 'none' }}>Logout</button>
         </div>
 
-        {/* Page Content */}
         <div style={{ padding: '20px' }}>
           <h1>Prerequisite Waiver Form</h1>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxWidth: '400px' }}>
             <label>
               Name:
-              <input type="text" name="name" value={formData.name} onChange={handleInputChange} />
+              <input type="text" name="name" value={formData.name} onChange={handleInputChange} required />
             </label>
             <label>
               Email:
-              <input type="email" name="email" value={formData.email} onChange={handleInputChange} />
+              <input type="email" name="email" value={formData.email} onChange={handleInputChange} required />
             </label>
             <label>
-              Date:
-              <input type="date" name="date" value={formData.date} onChange={handleInputChange} />
+              University ID (UID):
+              <input type="text" name="uid" value={formData.uid} onChange={handleInputChange} required />
+            </label>
+            <label>
+              Cumulative GPA (CGPA):
+              <input type="number" step="0.01" name="cgpa" value={formData.cgpa} onChange={handleInputChange} required />
+            </label>
+            <label>
+              Term Requested:
+              <input type="text" name="term" value={formData.term} onChange={handleInputChange} placeholder="e.g., Fall 2024 (2241)" required />
             </label>
             <label>
               Class Requested:
@@ -130,54 +107,33 @@ function PrerequisiteWaiver() {
                 name="classRequest"
                 value={formData.classRequest}
                 onChange={handleInputChange}
+                required
               />
               <datalist id="classOptions">
-                {classOptions.map((classOption, index) => (
-                  <option key={index} value={classOption} />
+                {courses.map((course, index) => (
+                  <option key={index} value={course.course_code}>
+                    {course.course_title}
+                  </option>
                 ))}
               </datalist>
             </label>
             <label>
               Reason for asking pre-requisite:
-              <textarea name="reason" value={formData.reason} onChange={handleInputChange} />
+              <textarea name="reason" value={formData.reason} onChange={handleInputChange} required />
             </label>
             <label>
-              Please explain in detail why you feel you are prepared to take this course without having completed the pre- or co-requisite(s):
-              <textarea name="detailedReason" value={formData.detailedReason} onChange={handleInputChange}></textarea>
+              Detailed reason:
+              <textarea name="detailedReason" value={formData.detailedReason} onChange={handleInputChange} required />
             </label>
             <label>
-              Is this form a request for a prerequisite waiver to take Senior Design I (EEEE 497/ISEE 497/MECE 497) or MECE 348 Contemporary Issues?
-              <input
-                type="radio"
-                name="seniorDesignRequest"
-                value="yes"
-                checked={formData.seniorDesignRequest === 'yes'}
-                onChange={handleInputChange}
-              /> Yes
-              <input
-                type="radio"
-                name="seniorDesignRequest"
-                value="no"
-                checked={formData.seniorDesignRequest === 'no'}
-                onChange={handleInputChange}
-              /> No
+              Senior Design Request:
+              <input type="radio" name="seniorDesignRequest" value="yes" checked={formData.seniorDesignRequest === 'yes'} onChange={handleInputChange} /> Yes
+              <input type="radio" name="seniorDesignRequest" value="no" checked={formData.seniorDesignRequest === 'no'} onChange={handleInputChange} /> No
             </label>
             <label>
-              Are you applying for a waiver for COOP 1?
-              <input
-                type="radio"
-                name="coopWaiver"
-                value="yes"
-                checked={formData.coopWaiver === 'yes'}
-                onChange={handleInputChange}
-              /> Yes
-              <input
-                type="radio"
-                name="coopWaiver"
-                value="no"
-                checked={formData.coopWaiver === 'no'}
-                onChange={handleInputChange}
-              /> No
+              COOP Waiver:
+              <input type="radio" name="coopWaiver" value="yes" checked={formData.coopWaiver === 'yes'} onChange={handleInputChange} /> Yes
+              <input type="radio" name="coopWaiver" value="no" checked={formData.coopWaiver === 'no'} onChange={handleInputChange} /> No
             </label>
             <label>
               Upload JD (PDF only):
