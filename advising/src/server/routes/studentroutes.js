@@ -1,13 +1,12 @@
 import { Router } from 'express';
-import { getStudentsLOA, submitWaiverRequest } from '../student/studentloa.js';  
+import { getStudentData, submitWaiverRequest } from '../student/studentloa.js';
 
+const router = Router();
 
-  const router = Router();
+// Route to get student information
+router.get('/student-data', getStudentData);
 
-  // Route to get student information
-  router.get('/studentsloa', getStudentsLOA);
-  
-  // Route to submit a prerequisite waiver
-  router.post('/submit-waiver', submitWaiverRequest);
+// Route to submit a prerequisite waiver
+router.post('/submit-waiver', submitWaiverRequest);
 
-  export default router;
+export default router;

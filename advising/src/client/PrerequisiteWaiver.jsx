@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './styles/index.css';
@@ -21,13 +20,33 @@ function PrerequisiteWaiver() {
 
   const [courses, setCourses] = useState([]); // State to store fetched courses
 
-  // Fetch courses from the server on component mount
+  // Fetch student data and populate form when the component mounts
   useEffect(() => {
-    fetch('/api/courses') // Make sure your backend route is correct
+    fetch('/api/student-data', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data) {
+          setFormData((prevData) => ({
+            ...prevData,
+            name: `${data.first_name} ${data.last_name}`,
+            email: data.email_id,
+            uid: data.university_id,
+            cgpa: data.CGPA,
+          }));
+        }
+      })
+      .catch((err) => console.error('Error fetching student data:', err));
+
+    // Fetch courses from the server on component mount
+    fetch('/api/courses')
       .then((res) => res.json())
       .then((data) => setCourses(data))
       .catch((err) => console.error('Error fetching courses:', err));
-  }, []);
+  }, []); // Correctly close useEffect here
 
   const handleInputChange = (e) => {
     const { name, value, type, files } = e.target;
@@ -45,9 +64,12 @@ function PrerequisiteWaiver() {
       submitData.append(key, formData[key]);
     }
 
-    fetch('/api/waiver', { // Adjust API endpoint if needed
+    fetch('/api/submit-waiver', {
       method: 'POST',
       body: submitData,
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
     })
       .then((res) => res.json())
       .then((data) => {
@@ -81,19 +103,19 @@ function PrerequisiteWaiver() {
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxWidth: '400px' }}>
             <label>
               Name:
-              <input type="text" name="name" value={formData.name} onChange={handleInputChange} required />
+              <input type="text" name="name" value={formData.name} readOnly required />
             </label>
             <label>
               Email:
-              <input type="email" name="email" value={formData.email} onChange={handleInputChange} required />
+              <input type="email" name="email" value={formData.email} readOnly required />
             </label>
             <label>
               University ID (UID):
-              <input type="text" name="uid" value={formData.uid} onChange={handleInputChange} required />
+              <input type="text" name="uid" value={formData.uid} readOnly required />
             </label>
             <label>
               Cumulative GPA (CGPA):
-              <input type="number" step="0.01" name="cgpa" value={formData.cgpa} onChange={handleInputChange} required />
+              <input type="number" step="0.01" name="cgpa" value={formData.cgpa} readOnly required />
             </label>
             <label>
               Term Requested:

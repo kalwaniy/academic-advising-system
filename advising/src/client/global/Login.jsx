@@ -10,7 +10,7 @@ function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!username || !password) {
+    if (!username.trim() || !password.trim()) {
       setError('Username and password are required');
     } else {
       try {
@@ -19,11 +19,11 @@ function LoginPage() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ username, password }),
+          body: JSON.stringify({ username: username.trim(), password: password.trim() }),
         });
-
+  
         const data = await response.json();
-
+  
         if (response.ok) {
           console.log('Login successful:', data);
           setError('');
@@ -38,7 +38,7 @@ function LoginPage() {
       }
     }
   };
-
+  
   return (
     <div className="login-page">
       {/* Navbar section */}
