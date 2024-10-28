@@ -1,5 +1,7 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Select from 'react-select'; // Import the select component for searchable dropdowns
 import './styles/index.css';
 
 function PrerequisiteWaiver() {
@@ -44,9 +46,15 @@ function PrerequisiteWaiver() {
     // Fetch courses from the server on component mount
     fetch('/api/courses')
       .then((res) => res.json())
-      .then((data) => setCourses(data))
+      .then((data) => {
+        const formattedCourses = data.map(course => ({
+          value: course.course_code,
+          label: `${course.course_code} - ${course.course_title}`,
+        }));
+        setCourses(formattedCourses);
+      })
       .catch((err) => console.error('Error fetching courses:', err));
-  }, []); // Correctly close useEffect here
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value, type, files } = e.target;
@@ -55,6 +63,10 @@ function PrerequisiteWaiver() {
     } else {
       setFormData({ ...formData, [name]: value });
     }
+  };
+
+  const handleSelectChange = (selectedOption) => {
+    setFormData({ ...formData, classRequest: selectedOption.value });
   };
 
   const handleSubmit = (e) => {
@@ -123,21 +135,13 @@ function PrerequisiteWaiver() {
             </label>
             <label>
               Class Requested:
-              <input
-                type="text"
-                list="classOptions"
-                name="classRequest"
-                value={formData.classRequest}
-                onChange={handleInputChange}
+              <Select
+                options={courses}
+                onChange={handleSelectChange}
+                placeholder="Select a course..."
+                isSearchable
                 required
               />
-              <datalist id="classOptions">
-                {courses.map((course, index) => (
-                  <option key={index} value={course.course_code}>
-                    {course.course_title}
-                  </option>
-                ))}
-              </datalist>
             </label>
             <label>
               Reason for asking pre-requisite:

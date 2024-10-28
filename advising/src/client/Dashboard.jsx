@@ -1,41 +1,58 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable no-undef */
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode'; // Ensure jwtDecode is imported
-import NotificationPanel from './NotificationPanel'; 
+import axios from 'axios'; 
+import NotificationPanel from './NotificationPanel';
 import './styles/index.css';
 
 const sections = [
-  { title: 'Prerequisite Waiver', icon: '📝', description: 'Click to proceed', link: '/PrerequisiteWaiver' },
-  { title: 'StudentInfo', icon: '🎓', description: 'View student information', link: '/StudentInfo' },  
+  { title: 'Prerequisite Waiver', icon: '📝', description: 'Click to proceed', link: '/Prerequisite-waiver' },
+  { title: 'StudentInfo', icon: '🎓', description: 'View student information', link: '/student-info' },
   { title: 'Tasks', icon: '⚠', description: 'No current tasks' },
 ];
 
 function Dashboard() {
-  const [username, setUsername] = useState(''); // Store the username
+  const [fullName, setFullName] = useState(''); // Store the full name
   const navigate = useNavigate();
 
+  // Fetch user info from the server
   useEffect(() => {
-    // Retrieve the token from localStorage
-    const token = localStorage.getItem('token');
-
-    if (token) {
+    const fetchUserInfo = async () => {
       try {
-        const decoded = jwtDecode(token); // Decode the token
-        console.log("Decoded token:", decoded);
-        if (decoded && decoded.username) {
-          setUsername(decoded.username); // Set the username from the token
+        const response = await axios.get('http://localhost:5000/api/student-dashboard/user-info', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+        
+        
+        // Check if the response has data and destructure properly
+        if (response.data && response.data.firstName && response.data.lastName) {
+          const { firstName, lastName } = response.data;
+  
+          // Log to check the received data
+          console.log('Received user info:', { firstName, lastName });
+  
+          // Set the fullName state with the fetched names
+          setFullName(`${firstName} ${lastName}`);
         } else {
-          console.error("Token does not contain a username.");
+          console.warn('Incomplete user data received:', response.data);
+          setFullName('Student'); // Fallback if data is incomplete
         }
       } catch (error) {
-        console.error('Failed to decode token:', error);
+        console.error('Error fetching user info:', error);
+        if (error.response && error.response.status === 404) {
+          navigate('/login'); // Redirect to login if user not found
+        }
       }
-    } else {
-      console.warn('No token found, user may not be logged in.');
-      navigate('/login'); // Redirect to login if no token
-    }
-  }, [navigate]); // Runs only once when the component mounts
+    };
+  
+    fetchUserInfo();
+  }, [navigate]);
+  
 
+  // Handle click on sections
   const handleClick = (link) => {
     navigate(link);
   };
@@ -44,13 +61,13 @@ function Dashboard() {
     <div className="dashboard-container">
       <div className="main-content">
         <header className="dashboard-header">
-          <h1>Welcome, {username || 'Student'}!</h1> {/* Display the logged-in user's username */}
+          <h1>Welcome, {fullName || 'Student'}!</h1> {/* Display the logged-in user's full name */}
         </header>
         <div className="dashboard-cards">
           {sections.map((section, index) => (
             <div
               key={index}
-              className={`dashboard-card ${section.link ? 'clickable' : ''}`} // Corrected here
+              className={`dashboard-card ${section.link ? 'clickable' : ''}`}
               onClick={() => section.link && handleClick(section.link)}
             >
               <div className="card-icon">{section.icon}</div>

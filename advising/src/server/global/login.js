@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import db from '../db/db.js'; // Ensure correct path
 import jwt from 'jsonwebtoken';
 import 'dotenv/config';
@@ -11,8 +12,14 @@ export const login = async (req, res) => {
   }
 
   try {
-    // Query to find the user
-    const users = await db.query('SELECT * FROM users WHERE username = ?', [username.trim()]);
+    // Modify query to join the users and students tables
+    const query = `
+      SELECT u.user_id, u.username, u.passwd, u.role, s.first_name, s.last_name 
+      FROM users u
+      JOIN students s ON u.user_id = s.university_id
+      WHERE u.username = ?
+    `;
+    const users = await db.query(query, [username.trim()]);
 
     if (users.length === 0) {
       console.log('No user found with this username:', username);
@@ -21,17 +28,23 @@ export const login = async (req, res) => {
 
     const user = users[0];
 
-    // Compare plaintext passwords
-    const isMatch = user.passwd.trim() === password.trim(); // Adjust if using hashed passwords
+    // Compare plaintext passwords (adjust if using hashing)
+    const isMatch = user.passwd.trim() === password.trim();
 
     if (!isMatch) {
       console.log('Password does not match for user:', username);
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
-    // Generate JWT token
+    // Generate JWT token with first name and last name
     const token = jwt.sign(
-      { userID: user.userID, username: user.username, role: user.role },
+      {
+        user_id: user.user_id, // Use the correct user_id
+        username: user.username,
+        role: user.role,
+        firstName: user.first_name,  // Include first name
+        lastName: user.last_name,    // Include last name
+      },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );

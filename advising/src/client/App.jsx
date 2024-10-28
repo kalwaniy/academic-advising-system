@@ -12,7 +12,7 @@ function App() {
       <Route path="/" element={<Login />} />
       <Route path="/login" element={<Login />} />
       <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/PrerequisiteWaiver" element={<PrerequisiteWaiver />} />
+      <Route path="/Prerequisite-Waiver" element={<PrerequisiteWaiver />} />
       <Route path="/StudentInfo" element={<StudentInfo />} />
     </Routes>
   );
