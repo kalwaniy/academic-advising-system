@@ -15,21 +15,33 @@ function PrerequisiteWaiver() {
     classRequest: '',
     reason: '',
     detailedReason: '',
-    seniorDesignRequest: '',
-    coopWaiver: '',
+    seniorDesignRequest: 'no', // Default value set to 'no'
+    coopWaiver: 'no', // Default value set to 'no'
     jdDocument: null,
   });
 
   const [courses, setCourses] = useState([]); // State to store fetched courses
 
-  // Fetch student data and populate form when the component mounts
+  // Fetch student data and courses when the component mounts
   useEffect(() => {
-    fetch('/api/student-data', {
+    // Fetch student data
+    fetch('http://localhost:5000/api/student-data', {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
       },
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`Error fetching student data: ${res.status}`);
+        }
+        return res.text(); // Read as plain text first
+      })
+      .then((text) => {
+        if (!text) {
+          throw new Error('No data returned from the student data API');
+        }
+        return JSON.parse(text);
+      })
       .then((data) => {
         if (data) {
           setFormData((prevData) => ({
@@ -42,19 +54,33 @@ function PrerequisiteWaiver() {
         }
       })
       .catch((err) => console.error('Error fetching student data:', err));
-
-    // Fetch courses from the server on component mount
-    fetch('/api/courses')
-      .then((res) => res.json())
-      .then((data) => {
-        const formattedCourses = data.map(course => ({
-          value: course.course_code,
-          label: `${course.course_code} - ${course.course_title}`,
-        }));
-        setCourses(formattedCourses);
-      })
-      .catch((err) => console.error('Error fetching courses:', err));
+  
+    // Fetch courses from the server
+    fetch('http://localhost:5000/api/courses', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+    })
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error(`Error fetching courses: ${res.status}`);
+      }
+      return res.json();
+    })
+    .then((data) => {
+      if (!Array.isArray(data)) {
+        throw new Error('Courses data format is not an array');
+      }
+      console.log('Courses API Response:', data);
+      setCourses(data.map((course) => ({
+        value: course.course_code,
+        label: `${course.course_code} - ${course.course_title}`,
+      })));
+    })
+    .catch((err) => console.error('Error fetching courses:', err));
   }, []);
+  
+  
 
   const handleInputChange = (e) => {
     const { name, value, type, files } = e.target;
@@ -76,14 +102,19 @@ function PrerequisiteWaiver() {
       submitData.append(key, formData[key]);
     }
 
-    fetch('/api/submit-waiver', {
+    fetch('http://localhost:5000/api/prerequisite-waiver/submit', {
       method: 'POST',
       body: submitData,
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
       },
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`Error submitting form: ${res.status}`);
+        }
+        return res.json();
+      })
       .then((data) => {
         if (data.success) {
           alert('Form submitted successfully!');
