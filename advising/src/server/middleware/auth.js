@@ -9,6 +9,7 @@ export const verifyToken = async (req, res, next) => {
   const token = req.headers['authorization'] && req.headers['authorization'].split(' ')[1];
 
   if (!token) {
+    console.warn('No token provided in request headers');
     return res.status(403).json({ msg: 'No token provided' });
   }
 
@@ -17,27 +18,37 @@ export const verifyToken = async (req, res, next) => {
     const decoded = jwt.verify(token, secretKey);
     console.log('Decoded token:', decoded);
 
-    // Fetch user information based on the decoded token
-    const userQuery = `
-      SELECT user_id, username, role
-      FROM users
-      WHERE username = ?
-    `;
-    const users = await db.query(userQuery, [decoded.username]);
+    // Ensure `user_id` is in the decoded token. If not, fetch it by username.
+    if (!decoded.user_id && decoded.username) {
+      const userQuery = `
+        SELECT user_id, username, role
+        FROM users
+        WHERE username = ?
+      `;
+      
+      const [users] = await db.query(userQuery, [decoded.username]);
 
-    if (users.length === 0) {
-      return res.status(404).json({ msg: 'User not found' });
+      if (users.length === 0) {
+        console.warn(`User with username ${decoded.username} not found`);
+        return res.status(404).json({ msg: 'User not found' });
+      }
+
+      const user = users[0];
+      console.log('User found in database:', user);
+
+      // Attach the user ID from the database to the request
+      req.user_id = user.user_id;
+      req.currentUser = user;
+    } else {
+      // Attach user_id directly from the decoded token if present
+      req.user_id = decoded.user_id;
     }
 
-    const user = users[0];
-    console.log('User found:', user);
+    // Attach additional properties from the decoded token if needed
+    req.userName = decoded.username;
+    req.userRole = decoded.role;
 
-    // Attach user information to the request object for later use
-    req.currentUser = user;
-    req.user_id = user.user_id; // Attach user_id to the request
-    console.log('User ID:', req.user_id);
-    req.userName = decoded.username; // Optionally attach username to request
-    req.userRole = user.role; // Optionally attach user role to request
+    console.log('Final attached User ID:', req.user_id);
 
     next(); // Move to the next middleware or route handler
   } catch (err) {

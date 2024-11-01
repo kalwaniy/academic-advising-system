@@ -17,16 +17,17 @@ router.get('/user-info', verifyToken, async (req, res) => {
       WHERE university_id = ?
     `;
     const [result] = await db.query(userQuery, [userId]);
-    
+
     // Log the result object to understand its structure
     console.log('Query Result:', result);
 
-    // If result is not empty and contains the expected data
-    if (result && result.first_name && result.last_name) {
-      console.log('Fetched User:', result);  // Log the user data
+    // Check if result is an array and has at least one entry
+    if (Array.isArray(result) && result.length > 0) {
+      const user = result[0];
+      console.log('Fetched User:', user);  // Log the user data
 
       // Send the first name and last name to the frontend
-      return res.json({ firstName: result.first_name, lastName: result.last_name });
+      return res.json({ firstName: user.first_name, lastName: user.last_name });
     } else {
       console.warn('User not found or incomplete data for ID:', userId);
       return res.status(404).json({ msg: 'User not found or incomplete data' });
@@ -37,7 +38,5 @@ router.get('/user-info', verifyToken, async (req, res) => {
   }
 });
 
-
 export default router;
-
 
