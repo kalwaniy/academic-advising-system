@@ -81,10 +81,11 @@ function PrerequisiteWaiver() {
   const handleSubmit = (e) => {
     e.preventDefault();
   
-    // Prepare FormData and log content to verify each field
+    // Prepare FormData and map uid to submitted_by explicitly
     const submitData = new FormData();
+    submitData.append('submitted_by', formData.uid); // explicit mapping
     Object.entries(formData).forEach(([key, value]) => {
-      submitData.append(key, value);
+      if (key !== 'uid') submitData.append(key, value); // exclude uid as it's now mapped to submitted_by
     });
   
     // Log FormData to verify each key-value pair
@@ -97,7 +98,6 @@ function PrerequisiteWaiver() {
       body: submitData,
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        // Do not set Content-Type here; it should be automatically set to multipart/form-data by fetch when FormData is used
       },
     })
       .then((res) => {
@@ -115,6 +115,7 @@ function PrerequisiteWaiver() {
       })
       .catch((err) => console.error('Error submitting form:', err));
   };
+  
   
 
   return (

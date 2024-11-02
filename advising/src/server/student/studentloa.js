@@ -36,68 +36,93 @@ const getStudentData = async (req, res) => {
 };
 
 const submitWaiverRequest = async (req, res) => {
-  console.log('Final attached User ID:', req.currentUser?.user_id);
   console.log('Raw Request Body:', req.body);
-  console.log('File Data:', req.file);
 
-  // Extract relevant fields from the request body and map correctly
+  // Extract and log the request body
   const {
-    uid, // corresponds to submitted_by
-    classRequest, // corresponds to course_code
+    classRequest, // should contain course code
+    reason,
+    detailedReason,
+    seniorDesignRequest = 'no',
+    term,
+    coopWaiver = 'no',
+    submitted_by,
+  } = req.body;
+
+  console.log('Extracted Values:', {
+    classRequest,
     reason,
     detailedReason,
     seniorDesignRequest,
     term,
     coopWaiver,
-  } = req.body;
+    submitted_by,
+  });
 
-  const documentPath = req.file ? req.file.path : null;
-
-  // Define fields for insertion with correct mappings
-  const waiverData = {
-    request_id: null, // Auto-generated, set to NULL or use default if defined
-    course_code: classRequest,
-    course_title: req.body.course_title || 'Unknown Title', // set a fallback
-    faculty_id: req.body.faculty_id || 'Unknown Faculty', // set a fallback if needed
-    reason,
-    justification: detailedReason,
-    senior_design_request: seniorDesignRequest === 'yes' ? 1 : 0,
-    status: 'Pending',
-    term_requested: term,
-    coop_request: coopWaiver === 'yes' ? 1 : 0,
-    jd_document_path: documentPath,
-    submitted_by: uid,
-  };
-
-  console.log('Extracted Values:', waiverData);
-
-  // Check required fields before inserting into the database
-  if (!waiverData.course_code || !waiverData.reason || !waiverData.submitted_by) {
+  // Validate that essential fields are populated
+  if (!classRequest || !reason || !submitted_by) {
     return res.status(400).json({ msg: 'Missing required fields' });
   }
 
   try {
-    // Database insertion query with properly mapped values
+    // Query to fetch the course title based on course code
+    const [courseRows] = await db.query('SELECT course_title FROM courses WHERE course_code = ?', [classRequest]);
+    const course_title = courseRows.length > 0 ? courseRows[0].course_title : null;
+
+    if (!course_title) {
+      console.warn(`Course not found for course code: ${classRequest}`);
+      return res.status(400).json({ msg: 'Course not found.' });
+    }
+
+    // Query to fetch the faculty_id based on course code
+    const facultyQuery = `
+      SELECT fc.faculty_id
+      FROM faculty_courses fc
+      JOIN faculty f ON fc.faculty_id = f.university_id
+      WHERE fc.course_code = ?;
+    `;
+    const [facultyRows] = await db.query(facultyQuery, [classRequest]);
+    const facultyId = facultyRows.length > 0 ? facultyRows[0].faculty_id : null;
+
+    if (!facultyId) {
+      console.warn(`No faculty found for course code: ${classRequest}`);
+      return res.status(400).json({ msg: `No faculty available for course code ${classRequest}.` });
+    }
+
+    console.log('Final extracted data:', {
+      request_id: null, // assuming request_id is auto-generated
+      classRequest,
+      course_title,
+      facultyId,
+      reason,
+      detailedReason,
+      seniorDesignRequest: seniorDesignRequest === 'yes' ? 1 : 0,
+      term,
+      coopWaiver: coopWaiver === 'yes' ? 1 : 0,
+      documentPath: null, // Handle jdDocument here if uploaded
+      submitted_by,
+    });
+
+    // Insert waiver request into database
     const waiverQuery = `
       INSERT INTO prerequisite_waivers 
       (request_id, course_code, course_title, faculty_id, reason_to_take, justification, 
       senior_design_request, status, term_requested, coop_request, jd_document_path, submitted_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?);
     `;
 
     const [result] = await db.query(waiverQuery, [
-      waiverData.request_id,
-      waiverData.course_code,
-      waiverData.course_title,
-      waiverData.faculty_id,
-      waiverData.reason,
-      waiverData.justification,
-      waiverData.senior_design_request,
-      waiverData.status,
-      waiverData.term_requested,
-      waiverData.coop_request,
-      waiverData.jd_document_path,
-      waiverData.submitted_by,
+      null, // auto-generated request_id
+      classRequest,
+      course_title,
+      facultyId,
+      reason,
+      detailedReason,
+      seniorDesignRequest === 'yes' ? 1 : 0,
+      term,
+      coopWaiver === 'yes' ? 1 : 0,
+      null, // handle jdDocument if uploaded
+      submitted_by,
     ]);
 
     console.log('Waiver submission result:', result);
@@ -107,7 +132,6 @@ const submitWaiverRequest = async (req, res) => {
     res.status(500).json({ msg: 'Server error' });
   }
 };
-
 
 
 // Function to get all available courses
