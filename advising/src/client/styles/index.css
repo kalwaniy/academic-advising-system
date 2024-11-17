@@ -632,3 +632,58 @@ button[type="submit"]:hover {
     margin-top: 1rem;
     text-align: center;
   }
+
+  .advisor-dashboard {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    background-color: #f9f9f9;
+  }
+  
+  .dashboard-title {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+  }
+  
+  .error {
+    color: red;
+    text-align: center;
+    font-size: 1.2rem;
+  }
+  
+  .table-container {
+    display: flex;
+    justify-content: center;
+  }
+  
+  .dashboard-table {
+    width: 90%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    background-color: #fff;
+  }
+  
+  .dashboard-table th, .dashboard-table td {
+    padding: 12px;
+    text-align: left;
+    border: 1px solid #ddd;
+  }
+  
+  .dashboard-table th {
+    background-color: #f46017;
+    color: white;
+  }
+  
+  .dashboard-table tr:nth-child(even) {
+    background-color: #f2f2f2;
+  }
+  
+  .dashboard-table tr:hover {
+    background-color: #f1f1f1;
+  }
+  
+  .dashboard-table td {
+    font-size: 14px;
+  }
+  

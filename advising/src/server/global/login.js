@@ -13,32 +13,27 @@ export const login = async (req, res) => {
 
   try {
     const query = `
-      SELECT u.user_id, u.username, u.passwd, u.role, s.first_name, s.last_name 
+      SELECT u.user_id, u.username, u.passwd, u.role
       FROM users u
-      JOIN students s ON u.user_id = s.university_id
-      WHERE u.username = ?
+      WHERE u.username = ?;
     `;
     const [users] = await db.query(query, [username]);
 
     if (!users || users.length === 0) {
-      console.log('No user found with this username:', username);
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
     const user = users[0];
     if (user.passwd !== password) {
-      console.log('Password does not match for user:', username);
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
-    // Generate JWT with user_id
+    // Generate JWT with user details
     const token = jwt.sign(
       {
         user_id: user.user_id,
         username: user.username,
         role: user.role,
-        firstName: user.first_name,
-        lastName: user.last_name,
       },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }

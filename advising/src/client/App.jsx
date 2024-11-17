@@ -1,19 +1,31 @@
-/* eslint-disable no-unused-vars */
 import React from 'react';
-import { Routes, Route } from 'react-router-dom'; // Import Routes and Route
-import Login from './global/Login'; // Make sure to import all required components
+import { Routes, Route, Navigate } from 'react-router-dom';
+import Login from './global/Login';
 import Dashboard from './Dashboard';
 import PrerequisiteWaiver from './PrerequisiteWaiver';
-import StudentInfo from './StudentInfo'; // Import the new StudentInfo component
+import StudentInfo from './StudentInfo';
+import AdvisorDashboard from './advisorDashboard';
+
+function ProtectedRoute({ element: Component, roleRequired }) {
+  const token = localStorage.getItem('token');
+  const decodedToken = token ? JSON.parse(atob(token.split('.')[1])) : null;
+
+  if (!decodedToken || decodedToken.role !== roleRequired) {
+    return <Navigate to="/login" />;
+  }
+
+  return Component;
+}
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<Login />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/Prerequisite-Waiver" element={<PrerequisiteWaiver />} />
-      <Route path="/StudentInfo" element={<StudentInfo />} />
+      <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} roleRequired="student" />} />
+      <Route path="/Prerequisite-Waiver" element={<ProtectedRoute element={<PrerequisiteWaiver />} roleRequired="student" />} />
+      <Route path="/StudentInfo" element={<ProtectedRoute element={<StudentInfo />} roleRequired="student" />} />
+      <Route path="/advisor-dashboard" element={<ProtectedRoute element={<AdvisorDashboard />} roleRequired="advisor" />} />
     </Routes>
   );
 }
