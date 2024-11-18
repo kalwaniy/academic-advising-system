@@ -2,7 +2,6 @@ import { Router } from 'express';
 import multer from 'multer';
 import { getStudentData, getCourses, submitWaiverRequest } from '../student/studentloa.js';
 import studentDashboardRoutes from '../student/studentdashboard.js';
-import { getAdvisorDashboard } from '../advisor/advisordashboard.js'; // Updated to named import
 import { verifyToken } from '../middleware/auth.js';
 
 const router = Router();
@@ -13,7 +12,7 @@ router.get('/courses', verifyToken, getCourses);
 router.post('/prerequisite-waiver/submit', verifyToken, upload.single('jdDocument'), submitWaiverRequest);
 
 router.use('/student-dashboard', verifyToken, studentDashboardRoutes);
-router.get('/advisor-dashboard', verifyToken, getAdvisorDashboard);
+
 
 
 export default router;
