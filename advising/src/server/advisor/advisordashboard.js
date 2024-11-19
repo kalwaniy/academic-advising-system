@@ -34,15 +34,15 @@ export const getAdvisorDashboard = async (req, res) => {
 
     // Step 2: Fetch waiver requests for these students
     const requestsQuery = `
-  SELECT 
-    pw.request_id, pw.course_code, pw.course_title, pw.reason_to_take, 
-    pw.justification, pw.senior_design_request, pw.status, pw.term_requested, 
-    pw.coop_request, pw.jd_document_path, pw.submitted_by, 
-    s.first_name, s.last_name
-  FROM prerequisite_waivers AS pw
-  JOIN students AS s ON pw.submitted_by = s.university_id
-  WHERE pw.submitted_by IN (?);
-`;
+      SELECT 
+        pw.request_id, pw.course_code, pw.course_title, pw.reason_to_take, 
+        pw.justification, pw.senior_design_request, pw.status, pw.term_requested, 
+        pw.coop_request, pw.jd_document_path, pw.submitted_by, 
+        s.first_name, s.last_name
+      FROM prerequisite_waivers AS pw
+      JOIN students AS s ON pw.submitted_by = s.university_id
+      WHERE pw.submitted_by IN (?);
+    `;
 
     const [requests] = await db.query(requestsQuery, [studentIds]);
 
@@ -97,5 +97,27 @@ export const getStudentDetails = async (req, res) => {
   } catch (err) {
     console.error('Error fetching student details:', err);
     res.status(500).json({ error: 'Server error' });
+  }
+};
+
+export const getAdvisorUserInfo = async (req, res) => {
+  try {
+    const advisorId = req.user_id; // Extract from verified token
+    const query = `
+      SELECT first_name, last_name 
+      FROM academic_advisors
+      WHERE university_id = ?;
+    `;
+    const [result] = await db.query(query, [advisorId]);
+
+    if (result.length === 0) {
+      return res.status(404).json({ msg: 'Advisor not found' });
+    }
+
+    const { first_name, last_name } = result[0];
+    res.status(200).json({ firstName: first_name, lastName: last_name });
+  } catch (error) {
+    console.error('Error fetching advisor info:', error);
+    res.status(500).json({ msg: 'Server error' });
   }
 };

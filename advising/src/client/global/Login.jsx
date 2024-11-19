@@ -37,7 +37,7 @@ function LoginPage() {
 
         // Navigate based on user role
         if (decodedToken.role === 'advisor') {
-          navigate('/advisor-dashboard');
+          navigate('/advisor-landing');
         } else {
           navigate('/dashboard');
         }

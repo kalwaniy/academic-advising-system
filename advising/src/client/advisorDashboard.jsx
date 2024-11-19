@@ -64,7 +64,7 @@ function AdvisorDashboard() {
 
   return (
     <div className="advisor-dashboard">
-      <h1 className="dashboard-title">Advisor Dashboard</h1>
+      <h1 className="dashboard-title">Pre-requisite Waiver requests</h1>
       {error && <p className="error">{error}</p>}
       {requests.length > 0 ? (
         <div className="table-container">

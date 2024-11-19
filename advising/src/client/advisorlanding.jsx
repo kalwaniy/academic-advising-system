@@ -1,0 +1,80 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable no-undef */
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import NotificationPanel from './NotificationPanel';
+import './styles/index.css';
+
+// Define the sections on the landing page
+const sections = [
+  { title: 'Manage Waivers', icon: '📜', description: 'Approve or reject waivers', link: '/advisor-dashboard' },
+  { title: 'View Assigned Students', icon: '🎓', description: 'View assigned student details', link: '/advisor-students' },
+  { title: 'Tasks', icon: '📋', description: 'Check pending tasks', link: '/advisor-tasks' },
+];
+
+function AdvisorLanding() {
+  const [fullName, setFullName] = useState(''); // Store advisor's full name
+  const navigate = useNavigate();
+
+  // Fetch advisor info from the server
+  useEffect(() => {
+    const fetchAdvisorInfo = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/user-info', {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+
+        if (response.data) {
+          const { firstName, lastName } = response.data;
+          setFullName(`${firstName} ${lastName}`);
+        } else {
+          console.warn('Incomplete user data received:', response.data);
+          setFullName('Advisor'); // Fallback name
+        }
+      } catch (error) {
+        console.error('Error fetching advisor info:', error);
+        if (error.response && error.response.status === 404) {
+          navigate('/login'); // Redirect to login if advisor not found
+        }
+      }
+    };
+
+    fetchAdvisorInfo();
+  }, [navigate]);
+
+  // Handle navigation when a section is clicked
+  const handleClick = (link) => {
+    navigate(link);
+  };
+
+  return (
+    <div className="dashboard-container">
+      <div className="main-content">
+        <header className="dashboard-header">
+          <h1>Welcome, {fullName || 'Advisor'}!</h1>
+        </header>
+        <div className="dashboard-cards">
+          {sections.map((section, index) => (
+            <div
+              key={index}
+              className={`dashboard-card ${section.link ? 'clickable' : ''}`}
+              onClick={() => section.link && handleClick(section.link)}
+            >
+              <div className="card-icon">{section.icon}</div>
+              <h3>{section.title}</h3>
+              <p>{section.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Notification Panel */}
+      <NotificationPanel />
+    </div>
+  );
+}
+
+export default AdvisorLanding;
