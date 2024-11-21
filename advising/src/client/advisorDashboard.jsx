@@ -13,46 +13,64 @@ function AdvisorDashboard() {
 
   useEffect(() => {
     const fetchRequests = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('No token found');
-        return;
-      }
-      try {
-        const response = await fetch('http://localhost:5000/api/advisor/dashboard', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setRequests(data);
-        } else {
-          const errorData = await response.json();
-          setError(errorData.msg || 'Error fetching requests');
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.error('No token found in localStorage');
+            setError('Authentication error: No token found. Please log in.');
+            return;
         }
-      } catch (err) {
-        console.error('Error fetching requests:', err);
-        setError('Server error');
-      }
+
+        try {
+            const response = await fetch('http://localhost:5000/api/advisor/dashboard', {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setRequests(data);
+            } else {
+                const errorData = await response.json();
+                console.error('Error fetching requests:', errorData);
+                setError(errorData.msg || 'Failed to fetch requests. Please try again.');
+            }
+        } catch (err) {
+            console.error('Error fetching requests:', err);
+            setError('Network error: Unable to fetch requests. Please check your connection.');
+        }
     };
 
     const fetchCourseData = async () => {
-      try {
-        const response = await fetch('http://localhost:5000/api/advisor/courses');
-        if (response.ok) {
-          const data = await response.json();
-          setCourseData(data);
-        } else {
-          console.error('Error fetching course data');
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.error('No token found in localStorage');
+            setError('Authentication error: No token found. Please log in.');
+            return;
         }
-      } catch (err) {
-        console.error('Error fetching course data:', err);
-      }
+
+        try {
+            const response = await fetch('http://localhost:5000/api/advisor/courses', {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setCourseData(data);
+            } else {
+                const errorData = await response.text();
+                console.error(`Error fetching course data: ${errorData}`);
+                setError('Failed to fetch course data. Please try again.');
+            }
+        } catch (err) {
+            console.error('Error fetching course data:', err);
+            setError('Network error: Unable to fetch course data. Please check your connection.');
+        }
     };
 
+    // Fetch data
     fetchRequests();
     fetchCourseData();
-  }, []);
+}, []);
+
 
   const fetchStudentDetails = async (studentId) => {
     const token = localStorage.getItem('token');
