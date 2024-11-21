@@ -6,22 +6,22 @@ import axios from 'axios';
 import NotificationPanel from './NotificationPanel';
 import './styles/index.css';
 
-// Define the sections on the landing page
+// Define sections on the landing page
 const sections = [
-  { title: 'Manage Waivers', icon: '📜', description: 'Approve or reject waivers', link: '/advisor-dashboard' },
-  { title: 'View Assigned Students', icon: '🎓', description: 'View assigned student details', link: '/advisor-students' },
-  { title: 'Tasks', icon: '📋', description: 'Check pending tasks', link: '/advisor-tasks' },
+  { title: 'Manage Waivers', icon: '📜', description: 'Review and approve waivers', link: '/department-waivers' },
+  { title: 'Manage Faculty', icon: '👩‍🏫', description: 'View and manage faculty assignments', link: '/department-faculty' },
+  { title: 'Department Reports', icon: '📊', description: 'View department performance reports', link: '/department-reports' },
 ];
 
-function AdvisorLanding() {
-  const [fullName, setFullName] = useState(''); // Store advisor's full name
+function DepartmentChairLanding() {
+  const [fullName, setFullName] = useState(''); // Store chair's full name
   const navigate = useNavigate();
 
-  // Fetch advisor info from the server
+  // Fetch department chair info from the server
   useEffect(() => {
-    const fetchAdvisorInfo = async () => {
+    const fetchChairInfo = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/advisor/user-info', {
+        const response = await axios.get('http://localhost:5000/api/department-chair/user-info', {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
           },
@@ -32,17 +32,17 @@ function AdvisorLanding() {
           setFullName(`${firstName} ${lastName}`);
         } else {
           console.warn('Incomplete user data received:', response.data);
-          setFullName('Advisor'); // Fallback name
+          setFullName('Department Chair'); // Fallback name
         }
       } catch (error) {
-        console.error('Error fetching advisor info:', error);
+        console.error('Error fetching chair info:', error);
         if (error.response && error.response.status === 404) {
-          navigate('/login'); // Redirect to login if advisor not found
+          navigate('/login'); // Redirect to login if not found
         }
       }
     };
 
-    fetchAdvisorInfo();
+    fetchChairInfo();
   }, [navigate]);
 
   // Handle navigation when a section is clicked
@@ -54,7 +54,7 @@ function AdvisorLanding() {
     <div className="dashboard-container">
       <div className="main-content">
         <header className="dashboard-header">
-          <h1>Welcome, {fullName || 'Advisor'}!</h1>
+          <h1>Welcome, {fullName || 'Department Chair'}!</h1>
         </header>
         <div className="dashboard-cards">
           {sections.map((section, index) => (
@@ -77,4 +77,4 @@ function AdvisorLanding() {
   );
 }
 
-export default AdvisorLanding;
+export default DepartmentChairLanding;

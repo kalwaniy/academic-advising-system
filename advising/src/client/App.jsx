@@ -6,6 +6,7 @@ import PrerequisiteWaiver from './PrerequisiteWaiver';
 import StudentInfo from './StudentInfo';
 import AdvisorDashboard from './advisorDashboard';
 import AdvisorLanding from './advisorlanding';
+import DepartmentChairLanding from './departmentChairLanding';
 
 // ProtectedRoute component to enforce role-based access control
 function ProtectedRoute({ element: Component, roleRequired }) {
@@ -22,8 +23,11 @@ function ProtectedRoute({ element: Component, roleRequired }) {
 function App() {
   return (
     <Routes>
+      {/* Common Routes */}
       <Route path="/" element={<Login />} />
       <Route path="/login" element={<Login />} />
+
+      {/* Student Routes */}
       <Route
         path="/dashboard"
         element={<ProtectedRoute element={<Dashboard />} roleRequired="student" />}
@@ -36,6 +40,8 @@ function App() {
         path="/StudentInfo"
         element={<ProtectedRoute element={<StudentInfo />} roleRequired="student" />}
       />
+
+      {/* Advisor Routes */}
       <Route
         path="/advisor-landing"
         element={<ProtectedRoute element={<AdvisorLanding />} roleRequired="advisor" />}
@@ -43,6 +49,12 @@ function App() {
       <Route
         path="/advisor-dashboard"
         element={<ProtectedRoute element={<AdvisorDashboard />} roleRequired="advisor" />}
+      />
+
+      {/* Department Chair Routes */}
+      <Route
+        path="/department-chair-landing"
+        element={<ProtectedRoute element={<DepartmentChairLanding />} roleRequired="dept_chair" />}
       />
     </Routes>
   );

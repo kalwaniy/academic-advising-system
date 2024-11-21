@@ -2,7 +2,9 @@ import { Router } from 'express';
 import {
   getAdvisorDashboard,
   getStudentDetails,
-  getAdvisorUserInfo
+  getAdvisorUserInfo,
+  updateWaiverRequest,
+  getCourses
 } from '../advisor/advisordashboard.js'; // Import from the advisor folder
 import { verifyToken } from '../middleware/auth.js';
 
@@ -14,9 +16,12 @@ router.get('/dashboard', verifyToken, getAdvisorDashboard);
 
 router.get('/student-details/:studentId', verifyToken, getStudentDetails);
 
-// Fetch advisor info for landing page
+
 router.get('/user-info', verifyToken, getAdvisorUserInfo);
 
+router.put('/update-request/:requestId', verifyToken, updateWaiverRequest);
+
+router.get('/courses', verifyToken, getCourses)
 
 
 

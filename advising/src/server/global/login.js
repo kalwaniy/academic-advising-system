@@ -28,12 +28,18 @@ export const login = async (req, res) => {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
+    // Map database roles to client roles if necessary
+    let clientRole = user.role;
+    if (user.role === 'dept_chair') {
+      clientRole = 'dept_chair';
+    }
+
     // Generate JWT with user details
     const token = jwt.sign(
       {
         user_id: user.user_id,
         username: user.username,
-        role: user.role,
+        role: clientRole, // Use the mapped client role
       },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }

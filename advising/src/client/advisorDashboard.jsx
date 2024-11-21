@@ -7,6 +7,9 @@ function AdvisorDashboard() {
   const [error, setError] = useState('');
   const [studentDetails, setStudentDetails] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [currentRequest, setCurrentRequest] = useState(null);
+  const [courseData, setCourseData] = useState([]); // Holds available course codes and titles
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -16,7 +19,7 @@ function AdvisorDashboard() {
         return;
       }
       try {
-        const response = await fetch('http://localhost:5000/api/dashboard', {
+        const response = await fetch('http://localhost:5000/api/advisor/dashboard', {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -32,13 +35,29 @@ function AdvisorDashboard() {
         setError('Server error');
       }
     };
+
+    const fetchCourseData = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/advisor/courses');
+        if (response.ok) {
+          const data = await response.json();
+          setCourseData(data);
+        } else {
+          console.error('Error fetching course data');
+        }
+      } catch (err) {
+        console.error('Error fetching course data:', err);
+      }
+    };
+
     fetchRequests();
+    fetchCourseData();
   }, []);
 
   const fetchStudentDetails = async (studentId) => {
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch(`http://localhost:5000/api/student-details/${studentId}`, {
+      const response = await fetch(`http://localhost:5000/api/advisor/student-details/${studentId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -57,14 +76,65 @@ function AdvisorDashboard() {
     }
   };
 
+  const handleEditRequest = (request) => {
+    setCurrentRequest(request);
+    setEditModalVisible(true);
+  };
+
+  const handleSaveChanges = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`http://localhost:5000/api/advisor/update-request/${currentRequest.request_id}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(currentRequest),
+      });
+
+      if (response.ok) {
+        alert('Request updated successfully!');
+        setEditModalVisible(false);
+        // Refresh the requests list
+        setRequests((prev) =>
+          prev.map((req) => (req.request_id === currentRequest.request_id ? currentRequest : req))
+        );
+      } else {
+        alert('Error updating request');
+      }
+    } catch (err) {
+      console.error('Error saving changes:', err);
+      alert('Server error');
+    }
+  };
+
   const closeModal = () => {
     setShowModal(false);
     setStudentDetails(null);
   };
 
+  const handleCourseCodeChange = (code) => {
+    const selectedCourse = courseData.find((course) => course.course_code === code);
+    setCurrentRequest((prev) => ({
+      ...prev,
+      course_code: code,
+      course_title: selectedCourse ? selectedCourse.course_title : '',
+    }));
+  };
+
+  const handleCourseTitleChange = (title) => {
+    const selectedCourse = courseData.find((course) => course.course_title === title);
+    setCurrentRequest((prev) => ({
+      ...prev,
+      course_code: selectedCourse ? selectedCourse.course_code : '',
+      course_title: title,
+    }));
+  };
+
   return (
     <div className="advisor-dashboard">
-      <h1 className="dashboard-title">Pre-requisite Waiver requests</h1>
+      <h1 className="dashboard-title">Pre-requisite Waiver Requests</h1>
       {error && <p className="error">{error}</p>}
       {requests.length > 0 ? (
         <div className="table-container">
@@ -95,6 +165,7 @@ function AdvisorDashboard() {
                   <td>{request.status}</td>
                   <td>
                     <button onClick={() => fetchStudentDetails(request.submitted_by)}>View Details</button>
+                    <button onClick={() => handleEditRequest(request)}>Edit</button>
                   </td>
                 </tr>
               ))}
@@ -105,12 +176,14 @@ function AdvisorDashboard() {
         <p>No requests found</p>
       )}
 
-      {/* Modal Popup for Student Details */}
+      {/* Modal for Viewing Student Details */}
       {showModal && studentDetails && (
         <div className="modal-overlay">
           <div className="modal-content">
             <h2>Student Details</h2>
-            <p><strong>Name:</strong> {`${studentDetails.first_name} ${studentDetails.last_name}`}</p>
+            <p>
+              <strong>Name:</strong> {`${studentDetails.first_name} ${studentDetails.last_name}`}
+            </p>
             <p><strong>Email:</strong> {studentDetails.email_id}</p>
             <p><strong>CGPA:</strong> {studentDetails.cgpa}</p>
             <p><strong>Program:</strong> {studentDetails.program}</p>
@@ -140,6 +213,88 @@ function AdvisorDashboard() {
               </tbody>
             </table>
             <button onClick={closeModal}>Close</button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal for Editing Request */}
+      {editModalVisible && currentRequest && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Edit Request</h2>
+            <form>
+              <label>
+                Course Code:
+                <select
+                  value={currentRequest.course_code}
+                  onChange={(e) => handleCourseCodeChange(e.target.value)}
+                >
+                  <option value="" disabled>Select a course code</option>
+                  {courseData.map((course) => (
+                    <option key={course.course_code} value={course.course_code}>
+                      {course.course_code}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Course Title:
+                <select
+                  value={currentRequest.course_title}
+                  onChange={(e) => handleCourseTitleChange(e.target.value)}
+                >
+                  <option value="" disabled>Select a course title</option>
+                  {courseData.map((course) => (
+                    <option key={course.course_title} value={course.course_title}>
+                      {course.course_title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Reason:
+                <textarea
+                  value={currentRequest.reason_to_take}
+                  onChange={(e) =>
+                    setCurrentRequest({ ...currentRequest, reason_to_take: e.target.value })
+                  }
+                />
+              </label>
+              <label>
+                Justification:
+                <textarea
+                  value={currentRequest.justification}
+                  onChange={(e) =>
+                    setCurrentRequest({ ...currentRequest, justification: e.target.value })
+                  }
+                />
+              </label>
+              <label>
+                Term Requested:
+                <input
+                  type="text"
+                  value={currentRequest.term_requested}
+                  onChange={(e) =>
+                    setCurrentRequest({ ...currentRequest, term_requested: e.target.value })
+                  }
+                />
+              </label>
+              <label>
+                Status:
+                <select
+                  value={currentRequest.status}
+                  onChange={(e) =>
+                    setCurrentRequest({ ...currentRequest, status: e.target.value })
+                  }
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+              </label>
+            </form>
+            <button onClick={handleSaveChanges}>Save Changes</button>
+            <button onClick={() => setEditModalVisible(false)}>Cancel</button>
           </div>
         </div>
       )}

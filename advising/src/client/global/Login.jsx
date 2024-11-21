@@ -38,8 +38,12 @@ function LoginPage() {
         // Navigate based on user role
         if (decodedToken.role === 'advisor') {
           navigate('/advisor-landing');
-        } else {
+        } else if (decodedToken.role === 'dept_chair') {
+          navigate('/department-chair-landing');
+        } else if (decodedToken.role === 'student') {
           navigate('/dashboard');
+        } else {
+          setError('Role not recognized');
         }
       } else {
         setError(data.error || 'Login failed');

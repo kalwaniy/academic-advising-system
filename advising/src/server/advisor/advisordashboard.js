@@ -121,3 +121,63 @@ export const getAdvisorUserInfo = async (req, res) => {
     res.status(500).json({ msg: 'Server error' });
   }
 };
+
+export const updateWaiverRequest = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { course_code, course_title, reason_to_take, justification, term_requested, status } = req.body;
+
+    // Ensure only valid fields are updated
+    const updateQuery = `
+      UPDATE prerequisite_waivers 
+      SET 
+        course_code = ?, 
+        course_title = ?, 
+        reason_to_take = ?, 
+        justification = ?, 
+        term_requested = ?, 
+        status = ? 
+      WHERE request_id = ?;
+    `;
+
+    const [result] = await db.query(updateQuery, [
+      course_code,
+      course_title,
+      reason_to_take,
+      justification,
+      term_requested,
+      status,
+      requestId,
+    ]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ msg: 'Request not found' });
+    }
+
+    res.status(200).json({ msg: 'Request updated successfully' });
+  } catch (err) {
+    console.error('Error updating request:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+export const getCourses = async (req, res) => {
+  try {
+    // Fetch all courses with their codes and titles
+    const query = `
+      SELECT course_code, course_title
+      FROM courses
+      ORDER BY course_code ASC;
+    `;
+    const [courses] = await db.query(query);
+
+    if (courses.length === 0) {
+      return res.status(404).json({ msg: 'No courses found' });
+    }
+
+    res.status(200).json(courses);
+  } catch (error) {
+    console.error('Error fetching courses:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
