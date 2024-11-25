@@ -181,3 +181,107 @@ export const getCourses = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+export const getNotesByRequestId = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+
+    const query = `
+      SELECT note_id, note_text AS content, created_at
+      FROM request_notes
+      WHERE request_id = ?;
+    `;
+    const [notes] = await db.query(query, [requestId]);
+
+    if (notes.length === 0) {
+      // Return an empty note object instead of 404
+      return res.status(200).json([{ content: '' }]);
+    }
+
+    res.status(200).json(notes);
+  } catch (error) {
+    console.error('Error fetching notes:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+
+
+export const upsertNote = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { content, role } = req.body;
+    const userId = req.user_id; // Extracted from middleware
+
+    // Debug logs
+    console.log('Request ID:', requestId);
+    console.log('Note Content:', content);
+    console.log('User ID (from middleware):', userId); // Check this log
+
+    if (!content) {
+      return res.status(400).json({ error: 'Note content is required' });
+    }
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User ID is required' });
+    }
+
+    const query = `
+      INSERT INTO request_notes (request_id, user_id, role, note_text, created_at)
+      VALUES (?, ?, ?, ?, NOW())
+      ON DUPLICATE KEY UPDATE 
+        note_text = VALUES(note_text), created_at = NOW();
+    `;
+
+    const [result] = await db.query(query, [requestId, userId, role || 'Advisor', content]);
+
+    res.status(200).json({ msg: 'Note saved successfully', result });
+  } catch (error) {
+    console.error('Error saving note:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+
+
+
+export const addAdvisorNote = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { content } = req.body;
+    const userId = req.user_id; // Extract from middleware
+    const role = req.userRole || 'Advisor';
+
+    // Log all critical variables
+    console.log('Request ID:', requestId);
+    console.log('Note Content:', content);
+    console.log('User ID (from middleware):', userId);
+    console.log('Role:', role);
+
+    if (!content) {
+      return res.status(400).json({ error: 'Note content is required' });
+    }
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User ID is required' });
+    }
+
+    // Database query
+    const query = `
+      INSERT INTO request_notes (request_id, user_id, role, note_text, created_at)
+      VALUES (?, ?, ?, ?, NOW())
+      ON DUPLICATE KEY UPDATE 
+        note_text = VALUES(note_text), created_at = NOW();
+    `;
+    console.log('Executing query with parameters:', [requestId, userId, role, content]);
+
+    const [result] = await db.query(query, [requestId, userId, role, content]);
+
+    console.log('Query executed successfully:', result);
+    res.status(200).json({ msg: 'Note added successfully', result });
+  } catch (error) {
+    console.error('Error adding note:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
