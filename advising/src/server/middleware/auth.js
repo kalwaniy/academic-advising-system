@@ -18,7 +18,7 @@ export const verifyToken = async (req, res, next) => {
     const decoded = jwt.verify(token, secretKey);
     console.log('Decoded token:', decoded);
 
-    // Ensure `user_id` is in the decoded token. If not, fetch it by username.
+    // Check if `user_id` exists in the token or fetch it from the database
     if (!decoded.user_id && decoded.username) {
       const userQuery = `
         SELECT user_id, username, role
@@ -36,23 +36,26 @@ export const verifyToken = async (req, res, next) => {
       const user = users[0];
       console.log('User found in database:', user);
 
-      // Attach the user ID from the database to the request
       req.user_id = user.user_id;
       req.currentUser = user;
     } else {
-      // Attach user_id directly from the decoded token if present
       req.user_id = decoded.user_id;
     }
 
-    // Attach additional properties from the decoded token if needed
+    // Attach other token properties
     req.userName = decoded.username;
     req.userRole = decoded.role;
 
     console.log('Final attached User ID:', req.user_id);
 
-    next(); // Move to the next middleware or route handler
+    next(); // Proceed to the next middleware or route handler
   } catch (err) {
     console.error('Token verification error:', err);
+    
+    if (err.name === 'TokenExpiredError') {
+      return res.status(401).json({ msg: 'Token has expired' });
+    }
+
     return res.status(500).json({ msg: 'Failed to authenticate token' });
   }
 };
