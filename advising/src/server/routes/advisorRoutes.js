@@ -4,7 +4,12 @@ import {
   getStudentDetails,
   getAdvisorUserInfo,
   updateWaiverRequest,
-  getCourses
+  getCourses,
+  getNotesByRequestId,
+  upsertNote,
+  addAdvisorNote,
+  generateReport,
+  sendToDeptChair
 } from '../advisor/advisordashboard.js'; // Import from the advisor folder
 import { verifyToken } from '../middleware/auth.js';
 
@@ -23,6 +28,11 @@ router.put('/update-request/:requestId', verifyToken, updateWaiverRequest);
 
 router.get('/courses', verifyToken, getCourses)
 
+router.get('/notes/:requestId', verifyToken, getNotesByRequestId);
+router.put('/notes/:requestId', verifyToken, upsertNote); // For upsert operations
+router.put('/notes/:requestId/advisor', verifyToken, addAdvisorNote); // For advisor-specific logic
+router.get('/report', verifyToken, generateReport);
+router.put('/send-to-dept-chair/:requestId', sendToDeptChair);
 
 
 export default router;

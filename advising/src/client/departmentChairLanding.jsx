@@ -8,7 +8,7 @@ import './styles/index.css';
 
 // Define sections on the landing page
 const sections = [
-  { title: 'Manage Waivers', icon: '📜', description: 'Review and approve waivers', link: '/department-waivers' },
+  { title: 'Manage Waivers', icon: '📜', description: 'Review and approve waivers', link: '/department-dashboard' },
   { title: 'Manage Faculty', icon: '👩‍🏫', description: 'View and manage faculty assignments', link: '/department-faculty' },
   { title: 'Department Reports', icon: '📊', description: 'View department performance reports', link: '/department-reports' },
 ];

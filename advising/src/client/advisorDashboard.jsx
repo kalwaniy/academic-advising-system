@@ -10,6 +10,8 @@ function AdvisorDashboard() {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [currentRequest, setCurrentRequest] = useState(null);
   const [courseData, setCourseData] = useState([]); // Holds available course codes and titles
+  const [selectedRequestId, setSelectedRequestId] = useState(null);
+  const [notes, setNotes] = useState('');
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -150,6 +152,86 @@ function AdvisorDashboard() {
     }));
   };
 
+  const openNotesModal = async (requestId) => {
+    setSelectedRequestId(requestId);
+    try {
+      const response = await fetch(`http://localhost:5000/api/advisor/notes/${requestId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      if (response.ok) {
+        const notesData = await response.json();
+        setNotes(notesData[0]?.content || ''); // Handle existing notes
+      } else {
+        setNotes('');
+        console.error('API returned error:', await response.text());
+      }
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+    }
+    setShowModal(true);
+  };
+  
+  const saveNotes = async () => {
+    const token = localStorage.getItem('token');
+    console.log('Authorization token:', token);
+  
+    try {
+      const response = await fetch(`http://localhost:5000/api/advisor/notes/${selectedRequestId}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: notes, // Ensure this matches the expected backend input
+        }),
+      });
+  
+      if (response.ok) {
+        alert('Note saved successfully!');
+      } else {
+        const errorData = await response.json();
+        console.error('API returned error:', errorData);
+        alert(`Failed to save note. Error: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error saving note:', error);
+      alert('Failed to save note.');
+    }
+  };
+  const handleSendToDeptChair = async (requestId) => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`http://localhost:5000/api/advisor/send-to-dept-chair/${requestId}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'In-Review' }), // Send the new status
+      });
+      if (response.ok) {
+        alert('Request sent to Dept Chair successfully!');
+        setRequests((prev) =>
+          prev.map((req) =>
+            req.request_id === requestId ? { ...req, status: 'In-Review' } : req
+          )
+        ); // Update the status locally
+      } else {
+        const errorData = await response.json();
+        alert(errorData.msg || 'Error sending request to Dept Chair.');
+      }
+    } catch (err) {
+      console.error('Error sending request:', err);
+      alert('Server error. Try again later.');
+    }
+  };
+  
+
   return (
     <div className="advisor-dashboard">
       <h1 className="dashboard-title">Pre-requisite Waiver Requests</h1>
@@ -184,6 +266,13 @@ function AdvisorDashboard() {
                   <td>
                     <button onClick={() => fetchStudentDetails(request.submitted_by)}>View Details</button>
                     <button onClick={() => handleEditRequest(request)}>Edit</button>
+                    <button onClick={() => handleSendToDeptChair(request.request_id)}>Send to Dept Chair</button>
+                    <button 
+                            onClick={() => openNotesModal(request.request_id)} 
+                            className="btn btn-primary"
+                            >
+                            Edit/View Notes
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -193,6 +282,26 @@ function AdvisorDashboard() {
       ) : (
         <p>No requests found</p>
       )}
+
+        {showModal && (
+          <div className="modal">
+            <div className="modal-content">
+              <h2>Edit/View Notes</h2>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows="10"
+                cols="50"
+              />
+              <button onClick={saveNotes} className="btn btn-success">
+                Save
+              </button>
+              <button onClick={() => setShowModal(false)} className="btn btn-secondary">
+                Close
+              </button>
+            </div>
+          </div>
+        )}
 
       {/* Modal for Viewing Student Details */}
       {showModal && studentDetails && (
