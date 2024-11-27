@@ -1,5 +1,8 @@
+/* eslint-disable react/prop-types */
+/* eslint-disable no-unused-vars */
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import Modal from 'react-modal'; 
 import Login from './global/Login';
 import Dashboard from './Dashboard';
 import PrerequisiteWaiver from './PrerequisiteWaiver';
@@ -7,7 +10,9 @@ import StudentInfo from './StudentInfo';
 import AdvisorDashboard from './advisorDashboard';
 import AdvisorLanding from './advisorlanding';
 import DepartmentChairLanding from './departmentChairLanding';
+import Reports from './reports';
 import DeptChairDashboard from './deptChairDashboard';
+import FacultyLanding from './facultyLanding';
 
 // ProtectedRoute component to enforce role-based access control
 function ProtectedRoute({ element: Component, roleRequired }) {
@@ -51,6 +56,10 @@ function App() {
         path="/advisor-dashboard"
         element={<ProtectedRoute element={<AdvisorDashboard />} roleRequired="advisor" />}
       />
+      <Route
+        path="/reports"
+        element={<ProtectedRoute element={<Reports />} roleRequired="advisor" />} // New Reports Route
+      />
 
       {/* Department Chair Routes */}
       <Route
@@ -61,6 +70,11 @@ function App() {
        <Route
         path="/department-dashboard"
         element={<ProtectedRoute element={<DeptChairDashboard />} roleRequired="dept_chair" />}
+      />
+
+     <Route
+        path="/faculty-landing"
+        element={<ProtectedRoute element={<FacultyLanding />} roleRequired="faculty" />}
       />
     </Routes>
   );

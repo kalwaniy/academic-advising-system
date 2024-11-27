@@ -29,11 +29,14 @@ router.put('/update-request/:requestId', verifyToken, updateWaiverRequest);
 router.get('/courses', verifyToken, getCourses)
 
 router.get('/notes/:requestId', verifyToken, getNotesByRequestId);
-router.put('/notes/:requestId', verifyToken, upsertNote); // For upsert operations
-router.put('/notes/:requestId/advisor', verifyToken, addAdvisorNote); // For advisor-specific logic
-router.get('/report', verifyToken, generateReport);
-router.put('/send-to-dept-chair/:requestId', sendToDeptChair);
 
+router.put('/notes/:requestId', verifyToken, upsertNote); 
+
+router.put('/notes/:requestId/advisor', verifyToken, addAdvisorNote); 
+
+router.get('/report', generateReport);
+
+router.put('/send-to-dept-chair/:requestId', verifyToken, sendToDeptChair);
 
 export default router;
 

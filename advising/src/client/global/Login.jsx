@@ -42,6 +42,8 @@ function LoginPage() {
           navigate('/department-chair-landing');
         } else if (decodedToken.role === 'student') {
           navigate('/dashboard');
+        } else if (decodedToken.role === 'faculty') {
+          navigate ('/faculty-landing');
         } else {
           setError('Role not recognized');
         }

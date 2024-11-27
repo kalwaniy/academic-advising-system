@@ -249,6 +249,7 @@ function AdvisorDashboard() {
                 <th>Term Requested</th>
                 <th>Student Name</th>
                 <th>Status</th>
+                <th>Processed Automatically</th> {/* Add this column */}
                 <th>Actions</th>
               </tr>
             </thead>
@@ -263,6 +264,7 @@ function AdvisorDashboard() {
                   <td>{request.term_requested}</td>
                   <td>{`${request.first_name} ${request.last_name}`}</td>
                   <td>{request.status}</td>
+                  <td>{request.auto_status || 'No'}</td> {/* Display auto status */}
                   <td>
                     <button onClick={() => fetchStudentDetails(request.submitted_by)}>View Details</button>
                     <button onClick={() => handleEditRequest(request)}>Edit</button>
@@ -305,44 +307,61 @@ function AdvisorDashboard() {
 
       {/* Modal for Viewing Student Details */}
       {showModal && studentDetails && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h2>Student Details</h2>
-            <p>
-              <strong>Name:</strong> {`${studentDetails.first_name} ${studentDetails.last_name}`}
-            </p>
-            <p><strong>Email:</strong> {studentDetails.email_id}</p>
-            <p><strong>CGPA:</strong> {studentDetails.cgpa}</p>
-            <p><strong>Program:</strong> {studentDetails.program}</p>
-            <p><strong>Year Level:</strong> {studentDetails.year_level}</p>
-            <p><strong>Term Enrolled:</strong> {studentDetails.year_enrolled}</p>
-            <p><strong>Current Term:</strong> {studentDetails.current_term}</p>
+  <div className="modal-overlay">
+    <div className="modal-content">
+      <h2>Student Details</h2>
+      <p><strong>Name:</strong> {`${studentDetails.first_name} ${studentDetails.last_name}`}</p>
+      <p><strong>Email:</strong> {studentDetails.email_id}</p>
+      <p><strong>CGPA:</strong> {studentDetails.cgpa}</p>
+      <p><strong>Program:</strong> {studentDetails.program}</p>
+      <p><strong>Year Level:</strong> {studentDetails.year_level}</p>
+      <p><strong>Term Enrolled:</strong> {studentDetails.year_enrolled}</p>
+      <p><strong>Current Term:</strong> {studentDetails.current_term}</p>
 
-            <h3>Course Log</h3>
-            <table className="course-log-table">
-              <thead>
-                <tr>
-                  <th>Course Code</th>
-                  <th>Course Title</th>
-                  <th>Term Taken</th>
-                  <th>Grade</th>
-                </tr>
-              </thead>
-              <tbody>
-                {studentDetails.courseLog.map((course) => (
-                  <tr key={course.course_code}>
-                    <td>{course.course_code}</td>
-                    <td>{course.course_title}</td>
-                    <td>{course.term_taken}</td>
-                    <td>{course.grade}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <button onClick={closeModal}>Close</button>
-          </div>
-        </div>
-      )}
+      <h3>Pre-requisites for Requested Course</h3>
+      <table className="prerequisites-table">
+        <thead>
+          <tr>
+            <th>Course Code</th>
+            <th>Course Title</th>
+          </tr>
+        </thead>
+        <tbody>
+          {studentDetails.prerequisites.map((prerequisite) => (
+            <tr key={prerequisite.prerequisite_course_code}>
+              <td>{prerequisite.prerequisite_course_code}</td>
+              <td>{prerequisite.prerequisite_title}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h3>Course Log</h3>
+      <table className="course-log-table">
+        <thead>
+          <tr>
+            <th>Course Code</th>
+            <th>Course Title</th>
+            <th>Term Taken</th>
+            <th>Grade</th>
+          </tr>
+        </thead>
+        <tbody>
+          {studentDetails.courseLog.map((course) => (
+            <tr key={course.course_code}>
+              <td>{course.course_code}</td>
+              <td>{course.course_title}</td>
+              <td>{course.term_taken}</td>
+              <td>{course.grade}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <button onClick={closeModal}>Close</button>
+    </div>
+  </div>
+)}
+
 
       {/* Modal for Editing Request */}
       {editModalVisible && currentRequest && (

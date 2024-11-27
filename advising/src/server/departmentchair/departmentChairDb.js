@@ -1,3 +1,5 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable no-undef */
 import db from '../db/db.js';
 import jwt from 'jsonwebtoken';
 
@@ -76,3 +78,132 @@ export const getStudentDetails = async (req, res) => {
       res.status(500).json({ error: 'Server error' });
     }
   };
+
+  export const getRequestNotes = async (req, res) => {
+    const { requestId } = req.params;
+  
+    try {
+      const query = `
+        SELECT note_id, user_id, role, note_text, created_at
+        FROM request_notes
+        WHERE request_id = ?;
+      `;
+      const [notes] = await db.query(query, [requestId]);
+  
+      if (!notes.length) {
+        return res.status(404).json({ msg: 'No notes found for this request.' });
+      }
+  
+      res.status(200).json(notes);
+    } catch (err) {
+      console.error('Error fetching notes:', err);
+      res.status(500).json({ error: 'Server error while fetching notes.' });
+    }
+  };
+
+  export const addRequestNote = async (req, res) => {
+    const { requestId } = req.params;
+    const { note_text } = req.body;
+    const userId = req.user_id; // Extracted from token via middleware
+    const role = req.userRole; // Extracted role from middleware
+  
+    if (!note_text || !requestId || !role) {
+      console.error('Missing required fields:', { note_text, requestId, role });
+      return res.status(400).json({ error: 'Note text, request ID, and role are required.' });
+    }
+  
+    try {
+      const query = `
+        INSERT INTO request_notes (request_id, user_id, role, note_text)
+        VALUES (?, ?, ?, ?);
+      `;
+      const [result] = await db.query(query, [requestId, userId, role, note_text]);
+  
+      if (result.affectedRows === 0) {
+        return res.status(500).json({ error: 'Failed to add note.' });
+      }
+  
+      res.status(201).json({ msg: 'Note added successfully.' });
+    } catch (err) {
+      console.error('Error adding note:', err);
+      res.status(500).json({ error: 'Server error while adding note.' });
+    }
+  };
+
+  export const getLatestAdvisorNote = async (req, res) => {
+    const { requestId } = req.params;
+  
+    try {
+      const query = `
+        SELECT note_id, user_id, role, note_text, created_at
+        FROM request_notes
+        WHERE request_id = ? AND role = 'advisor'
+        ORDER BY created_at DESC
+        LIMIT 1;
+      `;
+      const [rows] = await db.query(query, [requestId]);
+  
+      if (rows.length === 0) {
+        return res.status(404).json({ msg: 'No advisor notes found for this request.' });
+      }
+  
+      res.status(200).json(rows[0]); // Return only the latest note
+    } catch (err) {
+      console.error('Error fetching the latest advisor note:', err);
+      res.status(500).json({ error: 'Server error while fetching the latest advisor note.' });
+    }
+  };
+  
+  export const getStudentPastCourses = async (req, res) => {
+    const { studentId } = req.params;
+  
+    try {
+      const query = `
+        SELECT 
+          sc.course_code, 
+          c.course_title, 
+          sc.term_taken, 
+          sc.grade
+        FROM student_courses AS sc
+        JOIN courses AS c ON sc.course_code = c.course_code
+        WHERE sc.student_id = ?;
+      `;
+      const [rows] = await db.query(query, [studentId]);
+  
+      if (rows.length === 0) {
+        return res.status(404).json({ msg: 'No past courses found for this student.' });
+      }
+  
+      res.status(200).json(rows); // Return the list of past courses
+    } catch (err) {
+      console.error('Error fetching student past courses:', err);
+      res.status(500).json({ error: 'Server error while fetching student past courses.' });
+    }
+  };
+  
+
+  export const getDeptChairNote = async (req, res) => {
+    const { requestId } = req.params;
+  
+    try {
+      const query = `
+        SELECT note_id, user_id, role, note_text, created_at
+        FROM request_notes
+        WHERE request_id = ? AND role = 'dept_chair'
+        ORDER BY created_at DESC
+        LIMIT 1;
+      `;
+      const [rows] = await db.query(query, [requestId]);
+  
+      if (rows.length === 0) {
+        return res.status(404).json({ msg: 'No department chair notes found for this request.' });
+      }
+  
+      res.status(200).json(rows[0]); // Return the most recent department chair note
+    } catch (err) {
+      console.error('Error fetching department chair note:', err);
+      res.status(500).json({ error: 'Server error while fetching department chair note.' });
+    }
+  };
+
+  

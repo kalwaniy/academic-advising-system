@@ -1,5 +1,8 @@
 /* eslint-disable no-undef */
 import db from '../db/db.js';
+import { evaluateAutoProcessing } from '../utils/autoProcessingRules.js';
+
+
 
 // Function to get student data from 'students' and 'student_academic_info' tables
 // In studentloa.js
@@ -38,7 +41,6 @@ const getStudentData = async (req, res) => {
 const submitWaiverRequest = async (req, res) => {
   console.log('Raw Request Body:', req.body);
 
-  // Extract and log the request body
   const {
     classRequest, // should contain course code
     reason,
@@ -59,13 +61,11 @@ const submitWaiverRequest = async (req, res) => {
     submitted_by,
   });
 
-  // Validate that essential fields are populated
   if (!classRequest || !reason || !submitted_by) {
     return res.status(400).json({ msg: 'Missing required fields' });
   }
 
   try {
-    // Query to fetch the course title based on course code
     const [courseRows] = await db.query('SELECT course_title FROM courses WHERE course_code = ?', [classRequest]);
     const course_title = courseRows.length > 0 ? courseRows[0].course_title : null;
 
@@ -74,7 +74,6 @@ const submitWaiverRequest = async (req, res) => {
       return res.status(400).json({ msg: 'Course not found.' });
     }
 
-    // Query to fetch the faculty_id based on course code
     const facultyQuery = `
       SELECT fc.faculty_id
       FROM faculty_courses fc
@@ -89,44 +88,54 @@ const submitWaiverRequest = async (req, res) => {
       return res.status(400).json({ msg: `No faculty available for course code ${classRequest}.` });
     }
 
-    console.log('Final extracted data:', {
-      request_id: null, // assuming request_id is auto-generated
-      classRequest,
-      course_title,
-      facultyId,
-      reason,
-      detailedReason,
-      seniorDesignRequest: seniorDesignRequest === 'yes' ? 1 : 0,
-      term,
-      coopWaiver: coopWaiver === 'yes' ? 1 : 0,
-      documentPath: null, // Handle jdDocument here if uploaded
+    const request = {
+      course_code: classRequest,
+      reason_to_take: reason,
+      justification: detailedReason,
+      term_requested: term,
       submitted_by,
-    });
+    };
 
-    // Insert waiver request into database
+    // Step 1: Evaluate auto-processing logic
+    const { status, reason: autoReason } = await evaluateAutoProcessing(request);
+
+    // Determine auto_status
+    const autoStatus =
+      status === 'Approved' ? 'Auto-Approved' : status === 'Rejected' ? 'Auto-Rejected' : null;
+
+    console.log('Auto-processing result:', { status, autoReason, autoStatus });
+
+    // Step 2: Insert request into the database
     const waiverQuery = `
       INSERT INTO prerequisite_waivers 
-      (request_id, course_code, course_title, faculty_id, reason_to_take, justification, 
-      senior_design_request, status, term_requested, coop_request, jd_document_path, submitted_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?);
+      (course_code, course_title, faculty_id, reason_to_take, justification, 
+      senior_design_request, status, term_requested, coop_request, jd_document_path, submitted_by, auto_processed, auto_status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
     `;
 
     const [result] = await db.query(waiverQuery, [
-      null, // auto-generated request_id
       classRequest,
       course_title,
       facultyId,
       reason,
       detailedReason,
       seniorDesignRequest === 'yes' ? 1 : 0,
+      status, // Use status from auto-processing logic
       term,
       coopWaiver === 'yes' ? 1 : 0,
       null, // handle jdDocument if uploaded
       submitted_by,
+      status !== 'Pending' ? 1 : 0, // auto_processed flag
+      autoStatus,
     ]);
 
     console.log('Waiver submission result:', result);
-    res.status(200).json({ success: true, msg: 'Prerequisite waiver request submitted successfully!' });
+
+    res.status(200).json({
+      success: true,
+      msg: `Prerequisite waiver request ${status.toLowerCase()}.`,
+      reason: autoReason,
+    });
   } catch (err) {
     console.error('Error submitting waiver request:', err);
     res.status(500).json({ msg: 'Server error' });

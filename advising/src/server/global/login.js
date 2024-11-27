@@ -34,6 +34,8 @@ export const login = async (req, res) => {
       clientRole = 'dept_chair';
     }
 
+    
+
     // Generate JWT with user details
     const token = jwt.sign(
       {

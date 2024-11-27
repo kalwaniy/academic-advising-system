@@ -3,18 +3,24 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import Modal from 'react-modal'; // Install via `npm install react-modal`
 import NotificationPanel from './NotificationPanel';
 import './styles/index.css';
+
+Modal.setAppElement('#root'); 
 
 // Define the sections on the landing page
 const sections = [
   { title: 'Manage Waivers', icon: '📜', description: 'Approve or reject waivers', link: '/advisor-dashboard' },
   { title: 'View Assigned Students', icon: '🎓', description: 'View assigned student details', link: '/advisor-students' },
   { title: 'Tasks', icon: '📋', description: 'Check pending tasks', link: '/advisor-tasks' },
+  { title: 'Create Reports', icon: '📊', description: 'Generate waiver statistics', link: '/reports' }, // New Section
 ];
+
 
 function AdvisorLanding() {
   const [fullName, setFullName] = useState(''); // Store advisor's full name
+  const [modalOpen, setModalOpen] = useState(false); // State for the modal
   const navigate = useNavigate();
 
   // Fetch advisor info from the server
@@ -50,6 +56,12 @@ function AdvisorLanding() {
     navigate(link);
   };
 
+  // Handle report selection
+  const handleReportSelection = () => {
+    setModalOpen(false);
+    navigate('/reports'); // Redirect to the reports page
+  };
+
   return (
     <div className="dashboard-container">
       <div className="main-content">
@@ -68,11 +80,29 @@ function AdvisorLanding() {
               <p>{section.description}</p>
             </div>
           ))}
+          {/* Add Create Reports Button */}
+          <div
+            className="dashboard-card clickable"
+            onClick={() => setModalOpen(true)}
+          >
+            <div className="card-icon">📊</div>
+            <h3>Create Reports</h3>
+            <p>Generate reports for waiver statistics</p>
+          </div>
         </div>
       </div>
 
       {/* Notification Panel */}
       <NotificationPanel />
+
+      {/* Modal for Report Selection */}
+      <Modal isOpen={modalOpen} onRequestClose={() => setModalOpen(false)}>
+        <h2>Select Report</h2>
+        <ul>
+          <li onClick={handleReportSelection}>Prerequisite Waiver Report</li>
+        </ul>
+        <button onClick={() => setModalOpen(false)}>Close</button>
+      </Modal>
     </div>
   );
 }

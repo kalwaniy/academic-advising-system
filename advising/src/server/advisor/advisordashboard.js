@@ -62,7 +62,7 @@ export const getStudentDetails = async (req, res) => {
   const { studentId } = req.params;
 
   try {
-    // Updated query to fetch all required student information
+    // Fetch student details
     const studentQuery = `
       SELECT 
         s.university_id, s.first_name, s.last_name, s.email_id, 
@@ -79,7 +79,7 @@ export const getStudentDetails = async (req, res) => {
 
     const studentData = studentRows[0];
 
-    // Fetch course log with grades
+    // Fetch course log
     const courseLogQuery = `
       SELECT sc.course_code, c.course_title, sc.term_taken, sc.grade
       FROM student_courses sc
@@ -87,11 +87,19 @@ export const getStudentDetails = async (req, res) => {
       WHERE sc.student_id = ?;
     `;
     const [courseLogRows] = await db.query(courseLogQuery, [studentId]);
-
-    // Attach course log data to the studentData object
     studentData.courseLog = courseLogRows;
 
-    console.log('Fetched Student Details:', studentData);
+    // Fetch course prerequisites
+    const prerequisitesQuery = `
+      SELECT cp.prerequisite_course_code, c.course_title AS prerequisite_title
+      FROM course_prerequisites cp
+      JOIN courses c ON cp.prerequisite_course_code = c.course_code
+      WHERE cp.course_code = ?;
+    `;
+    const [prerequisitesRows] = await db.query(prerequisitesQuery, [studentData.courseLog[0]?.course_code || '']);
+    studentData.prerequisites = prerequisitesRows;
+
+    console.log('Fetched Student Details with Prerequisites:', studentData);
 
     res.status(200).json(studentData);
   } catch (err) {
@@ -99,6 +107,7 @@ export const getStudentDetails = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
 
 export const getAdvisorUserInfo = async (req, res) => {
   try {
@@ -288,27 +297,27 @@ export const addAdvisorNote = async (req, res) => {
 
 export const generateReport = async (req, res) => {
   try {
-      const facultyId = req.user_id; // Retrieved from the token middleware
       const query = `
           SELECT 
               pw.course_code AS Course,
               COUNT(*) AS TotalRequests,
-              AVG(a.CGPA) AS AverageGPA,
+              AVG(ai.CGPA) AS AverageGPA,
               pw.status AS Status
           FROM prerequisite_waivers pw
           JOIN students s ON pw.submitted_by = s.university_id
-          JOIN student_academic_info a ON s.university_id = a.university_id
-          WHERE pw.faculty_id = ?
+          JOIN student_academic_info ai ON s.university_id = ai.university_id
           GROUP BY pw.course_code, pw.status
           ORDER BY TotalRequests DESC;
       `;
-      const [reportData] = await db.query(query, [facultyId]);
-      res.status(200).json({ success: true, data: reportData });
+
+      const [results] = await db.query(query); // Use your database client
+      res.status(200).json({ success: true, data: results });
   } catch (error) {
       console.error('Error generating report:', error);
-      res.status(500).json({ success: false, error: 'Internal server error' });
+      res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
+
 
 export const sendToDeptChair = async (req, res) => {
   const { requestId } = req.params;
