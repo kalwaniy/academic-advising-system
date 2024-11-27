@@ -47,6 +47,34 @@ const Reports = () => {
         fetchReportData();
     }, []);
 
+    const handleDownloadExcel = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/api/advisor/download-excel-report', {
+                method: 'GET',
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP Error: ${response.status}`);
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'report.xlsx'); // Filename for the Excel file
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (err) {
+            console.error('Error downloading Excel report:', err);
+            alert('Failed to download Excel report.');
+        }
+    };
+
     const chartData = {
         labels: [...new Set(reportData.map(r => r.Course))],
         datasets: [
@@ -73,7 +101,10 @@ const Reports = () => {
                     <p>Error: {error}</p>
                 </div>
             ) : (
-                <Bar data={chartData} />
+                <>
+                    <Bar data={chartData} />
+                    <button onClick={handleDownloadExcel}>Download Excel</button>
+                </>
             )}
         </div>
     );

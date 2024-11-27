@@ -1,6 +1,8 @@
 /* eslint-disable no-undef */
 import db from '../db/db.js';
 import jwt from 'jsonwebtoken';
+import ExcelJS from 'exceljs';
+
 
 export const getAdvisorDashboard = async (req, res) => {
   try {
@@ -346,5 +348,48 @@ export const sendToDeptChair = async (req, res) => {
   } catch (err) {
     console.error('Error updating request status:', err);
     res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+export const downloadExcelReport = async (req, res) => {
+  try {
+      const query = `
+          SELECT 
+              pw.course_code AS Course,
+              COUNT(*) AS TotalRequests,
+              AVG(ai.CGPA) AS AverageGPA,
+              pw.status AS Status
+          FROM prerequisite_waivers pw
+          JOIN students s ON pw.submitted_by = s.university_id
+          JOIN student_academic_info ai ON s.university_id = ai.university_id
+          GROUP BY pw.course_code, pw.status
+          ORDER BY TotalRequests DESC;
+      `;
+
+      const [results] = await db.query(query);
+
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Report');
+
+      // Add Header Row
+      worksheet.columns = [
+          { header: 'Course', key: 'Course', width: 20 },
+          { header: 'Total Requests', key: 'TotalRequests', width: 15 },
+          { header: 'Average GPA', key: 'AverageGPA', width: 15 },
+          { header: 'Status', key: 'Status', width: 15 },
+      ];
+
+      // Add Data Rows
+      worksheet.addRows(results);
+
+      // Generate Excel File
+      const buffer = await workbook.xlsx.writeBuffer();
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename="report.xlsx"');
+      res.send(buffer);
+  } catch (error) {
+      console.error('Error exporting Excel report:', error);
+      res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
