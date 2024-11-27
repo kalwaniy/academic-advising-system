@@ -159,6 +159,35 @@ function DeptChairDashboard() {
     }
   };
   
+
+  const sendToFaculty = async (requestId) => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`http://localhost:5000/api/department-chair/send-to-faculty/${requestId}`, {
+        method: 'PATCH',
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      if (response.ok) {
+        alert('Request sent to faculty successfully!');
+        setRequests((prevRequests) =>
+          prevRequests.map((req) =>
+            req.request_id === requestId ? { ...req, status: 'In Review with Faculty' } : req
+          )
+        );
+      } else {
+        const errorData = await response.json();
+        console.error('Error sending to faculty:', errorData);
+        alert('Failed to send request to faculty.');
+      }
+    } catch (err) {
+      console.error('Error sending to faculty:', err);
+      alert('Server error while sending request to faculty.');
+    }
+  };
   
 
   const closeModal = () => {
@@ -201,10 +230,13 @@ function DeptChairDashboard() {
                   <td>{`${request.first_name} ${request.last_name}`}</td>
                   <td>{request.status}</td>
                   <td>
-                    <button onClick={() => fetchStudentDetails(request.submitted_by, request.request_id)}>
-                      View Details & Latest Note
-                    </button>
-                  </td>
+  <button onClick={() => fetchStudentDetails(request.submitted_by, request.request_id)}>
+    View Details & Latest Note
+  </button>
+  <button onClick={() => sendToFaculty(request.request_id)} className="btn btn-secondary">
+    Send to Faculty
+  </button>
+</td>
                 </tr>
               ))}
             </tbody>

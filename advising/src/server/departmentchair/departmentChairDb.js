@@ -206,4 +206,25 @@ export const getStudentDetails = async (req, res) => {
     }
   };
 
+  export const sendToFaculty = async (req, res) => {
+    const { requestId } = req.params;
+  
+    try {
+      const query = `
+        UPDATE prerequisite_waivers
+        SET status = 'In Review with Faculty'
+        WHERE request_id = ?;
+      `;
+      const [result] = await db.query(query, [requestId]);
+  
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ msg: 'Request not found or already updated.' });
+      }
+  
+      res.status(200).json({ msg: 'Request status updated to "In Review with Faculty".' });
+    } catch (err) {
+      console.error('Error updating request status:', err);
+      res.status(500).json({ error: 'Server error while updating request status.' });
+    }
+  };
   

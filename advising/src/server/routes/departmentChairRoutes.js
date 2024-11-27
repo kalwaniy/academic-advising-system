@@ -9,7 +9,8 @@ import { getDeptChairDashboard,
    addRequestNote,
     getLatestAdvisorNote,
   getStudentPastCourses,
-getDeptChairNote }  from '../departmentchair/departmentChairDb.js'
+getDeptChairNote,
+sendToFaculty }  from '../departmentchair/departmentChairDb.js'
 const router = Router();
 
 
@@ -28,6 +29,8 @@ router.get('/latest-advisor-note/:requestId', verifyToken, getLatestAdvisorNote)
 router.get('/student-past-courses/:studentId', verifyToken, getStudentPastCourses);
 
 router.get('/dept-chair-note/:requestId', verifyToken, getDeptChairNote);
+
+router.patch('/send-to-faculty/:requestId', sendToFaculty);
 
 
 
