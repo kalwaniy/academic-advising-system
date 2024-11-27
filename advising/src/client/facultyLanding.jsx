@@ -8,7 +8,7 @@ import './styles/index.css';
 
 // Define sections on the landing page
 const sections = [
-  { title: 'View Courses', icon: '📚', description: 'Manage your course assignments', link: '/faculty-courses' },
+  { title: 'View Courses', icon: '📚', description: 'Manage your course assignments', link: '/faculty-dashboard' },
   { title: 'Student Requests', icon: '📨', description: 'Review student prerequisite waivers', link: '/faculty-requests' },
   { title: 'Reports', icon: '📊', description: 'Access your performance and feedback reports', link: '/faculty-reports' },
 ];
