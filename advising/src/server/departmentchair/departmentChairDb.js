@@ -3,6 +3,7 @@
 import db from '../db/db.js';
 import jwt from 'jsonwebtoken';
 
+
 export const getDeptChairDashboard = async (req, res) => {
   try {
     const token = req.headers['authorization']?.split(' ')[1];
@@ -13,7 +14,7 @@ export const getDeptChairDashboard = async (req, res) => {
 
     const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Fetch waiver requests with "In-Review" status
+    // Fetch requests
     const query = `
       SELECT 
         pw.request_id, pw.course_code, pw.course_title, pw.reason_to_take, 
@@ -23,19 +24,21 @@ export const getDeptChairDashboard = async (req, res) => {
       JOIN students AS s ON pw.submitted_by = s.university_id
       WHERE pw.status = 'In-Review';
     `;
-
     const [requests] = await db.query(query);
 
-    if (requests.length === 0) {
-      return res.status(404).json({ msg: 'No requests in "In-Review" status found' });
-    }
+    console.log('Fetched Requests:', requests); // Debug log
 
-    res.status(200).json(requests);
+    // Fetch faculty members
+    const facultyQuery = `SELECT user_id, username FROM users WHERE role = 'faculty';`;
+    const [facultyMembers] = await db.query(facultyQuery);
+
+    res.status(200).json({ requests, facultyMembers });
   } catch (err) {
     console.error('Error fetching Dept Chair Dashboard:', err);
     res.status(500).json({ error: 'Server error' });
   }
 };
+
 
 export const getStudentDetails = async (req, res) => {
     const { studentId } = req.params;
@@ -208,23 +211,29 @@ export const getStudentDetails = async (req, res) => {
 
   export const sendToFaculty = async (req, res) => {
     const { requestId } = req.params;
+    const { facultyId } = req.body;
+  
+    if (!facultyId) {
+      return res.status(400).json({ msg: 'Faculty ID is required.' });
+    }
   
     try {
       const query = `
         UPDATE prerequisite_waivers
-        SET status = 'In Review with Faculty'
+        SET status = 'In Review with Facul', faculty_id = ?
         WHERE request_id = ?;
       `;
-      const [result] = await db.query(query, [requestId]);
+      const [result] = await db.query(query, [facultyId, requestId]);
   
       if (result.affectedRows === 0) {
         return res.status(404).json({ msg: 'Request not found or already updated.' });
       }
   
-      res.status(200).json({ msg: 'Request status updated to "In Review with Faculty".' });
+      res.status(200).json({ msg: 'Request successfully assigned to faculty.' });
     } catch (err) {
-      console.error('Error updating request status:', err);
-      res.status(500).json({ error: 'Server error while updating request status.' });
+      console.error('Error assigning request to faculty:', err);
+      res.status(500).json({ error: 'Server error while assigning request.' });
     }
   };
+  
   

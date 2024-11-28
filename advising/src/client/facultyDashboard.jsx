@@ -7,6 +7,11 @@ function FacultyDashboard() {
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [notes, setNotes] = useState([]);
+const [newNote, setNewNote] = useState('');
+const [showNotesModal, setShowNotesModal] = useState(false);
+const [selectedRequestId, setSelectedRequestId] = useState(null);
+
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -44,6 +49,79 @@ function FacultyDashboard() {
   };
   
 
+  const fetchNotes = async (requestId) => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`http://localhost:5000/api/faculty/notes/${requestId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+  
+      if (response.ok) {
+        const data = await response.json();
+        setNotes(data);
+        setSelectedRequestId(requestId);
+        setShowNotesModal(true);
+      } else {
+        console.error('Error fetching notes:', await response.text());
+      }
+    } catch (err) {
+      console.error('Error fetching notes:', err);
+    }
+  };
+
+  
+  const addNote = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`http://localhost:5000/api/faculty/notes/${selectedRequestId}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ note_text: newNote }),
+      });
+  
+      if (response.ok) {
+        alert('Note added successfully!');
+        setNewNote('');
+        fetchNotes(selectedRequestId); // Refresh notes
+      } else {
+        console.error('Error adding note:', await response.text());
+      }
+    } catch (err) {
+      console.error('Error adding note:', err);
+    }
+  };
+  
+  const completeReview = async (requestId) => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`http://localhost:5000/api/faculty/complete-review/${requestId}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+  
+      if (!response.ok) {
+        const errorText = await response.text(); // Log full error response
+        console.error('Error completing review:', errorText);
+        throw new Error('Failed to complete review.');
+      }
+  
+      const data = await response.json();
+      alert('Review completed successfully!');
+      setRequests((prevRequests) =>
+        prevRequests.map((req) =>
+          req.request_id === requestId ? { ...req, status: 'In Review' } : req
+        )
+      );
+    } catch (err) {
+      console.error('Error completing review:', err);
+      alert('Server error while completing review.');
+    }
+  };
+  
+  
   const closeModal = () => {
     setShowModal(false);
     setSelectedRequest(null);
@@ -82,6 +160,10 @@ function FacultyDashboard() {
                     <button onClick={() => openDetails(request)}>
                       View Details
                     </button>
+                    <button onClick={() => fetchNotes(request.request_id)}>View Notes</button>
+                    <button onClick={() => completeReview(request.request_id)} className="btn btn-primary">
+    Complete Review
+  </button>
                   </td>
                 </tr>
               ))}
@@ -109,6 +191,35 @@ function FacultyDashboard() {
           </div>
         </div>
       )}
+
+{showNotesModal && (
+  <div className="modal-overlay">
+    <div className="modal-content">
+      <h2>Notes for Request ID: {selectedRequestId}</h2>
+      <ul>
+        {notes.map((note) => (
+          <li key={note.note_id}>
+            <p><strong>{note.role}:</strong> {note.note_text}</p>
+            <p><em>{new Date(note.created_at).toLocaleString()}</em></p>
+          </li>
+        ))}
+      </ul>
+
+      <textarea
+        value={newNote}
+        onChange={(e) => setNewNote(e.target.value)}
+        placeholder="Add your note here..."
+      />
+      <button onClick={addNote} className="btn btn-primary">
+        Add Note
+      </button>
+      <button onClick={() => setShowNotesModal(false)} className="btn btn-secondary">
+        Close
+      </button>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }
