@@ -2,7 +2,7 @@
 import db from '../db/db.js';
 import jwt from 'jsonwebtoken';
 import ExcelJS from 'exceljs';
-
+import { sendEmail } from '../utils/email.js';
 
 export const getAdvisorDashboard = async (req, res) => {
   try {
@@ -321,6 +321,8 @@ export const generateReport = async (req, res) => {
 };
 
 
+
+
 export const sendToDeptChair = async (req, res) => {
   const { requestId } = req.params;
   const { status } = req.body;
@@ -331,25 +333,60 @@ export const sendToDeptChair = async (req, res) => {
       return res.status(400).json({ msg: 'Invalid data provided' });
     }
 
-    // Update the status in the database
-    const query = `
+    // Step 1: Fetch the department chair's details
+    const deptChairQuery = `
+      SELECT email_id, first_name, last_name 
+      FROM department_chairs 
+      LIMIT 1;
+    `;
+    const [deptChairRows] = await db.query(deptChairQuery);
+
+    if (deptChairRows.length === 0) {
+      console.warn('No department chair found in the system.');
+      return res.status(404).json({ msg: 'Department Chair not found.' });
+    }
+
+    const { email_id: deptChairEmail, first_name: firstName, last_name: lastName } = deptChairRows[0];
+
+    // Step 2: Update the status of the waiver request
+    const updateQuery = `
       UPDATE prerequisite_waivers 
       SET status = ? 
       WHERE request_id = ?;
     `;
-    const [result] = await db.query(query, [status, requestId]);
+    const [updateResult] = await db.query(updateQuery, [status, requestId]);
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ msg: 'Request not found' });
+    if (updateResult.affectedRows === 0) {
+      return res.status(404).json({ msg: 'Request not found.' });
     }
 
-    console.log(`Request ${requestId} status updated to ${status}`);
-    res.status(200).json({ msg: 'Request status updated successfully' });
+    // Step 3: Send an email notification to the department chair
+    const emailSubject = `New Waiver Request Needs Review (Request ID: ${requestId})`;
+    const emailBody = `
+      Dear ${firstName} ${lastName},
+
+      A new prerequisite waiver request has been sent to your attention for review.
+
+      Request Details:
+      - Request ID: ${requestId}
+      - Status: ${status}
+
+      Please log in to the system to review and take appropriate action.
+
+      Best regards,
+      University Waiver System
+    `;
+
+    await sendEmail(deptChairEmail, emailSubject, emailBody);
+    console.log(`Email sent to department chair (${deptChairEmail}).`);
+
+    res.status(200).json({ msg: 'Request status updated and email sent to department chair.' });
   } catch (err) {
-    console.error('Error updating request status:', err);
+    console.error('Error updating request status or sending email:', err);
     res.status(500).json({ msg: 'Server error' });
   }
 };
+
 
 export const downloadExcelReport = async (req, res) => {
   try {

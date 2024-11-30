@@ -215,7 +215,7 @@ function AdvisorDashboard() {
         body: JSON.stringify({ status: 'In-Review' }), // Send the new status
       });
       if (response.ok) {
-        alert('Request sent to Dept Chair successfully!');
+        alert('Request sent to Dept Chair successfully, and the Department Chair has been notified!');
         setRequests((prev) =>
           prev.map((req) =>
             req.request_id === requestId ? { ...req, status: 'In-Review' } : req
@@ -284,6 +284,88 @@ function AdvisorDashboard() {
       ) : (
         <p>No requests found</p>
       )}
+
+        {/* Approved Requests Table */}
+    <h2>Approved Requests</h2>
+    {requests.filter(request => request.status === 'Approved').length > 0 ? (
+      <div className="table-container">
+        <table className="dashboard-table">
+          <thead>
+            <tr>
+              <th>Request ID</th>
+              <th>Course Code</th>
+              <th>Course Title</th>
+              <th>Reason</th>
+              <th>Justification</th>
+              <th>Term Requested</th>
+              <th>Student Name</th>
+              <th>Status</th>
+              <th>Processed Automatically</th>
+            </tr>
+          </thead>
+          <tbody>
+            {requests
+              .filter(request => request.status === 'Approved')
+              .map(request => (
+                <tr key={request.request_id}>
+                  <td>{request.request_id}</td>
+                  <td>{request.course_code}</td>
+                  <td>{request.course_title}</td>
+                  <td>{request.reason_to_take}</td>
+                  <td>{request.justification}</td>
+                  <td>{request.term_requested}</td>
+                  <td>{`${request.first_name} ${request.last_name}`}</td>
+                  <td>{request.status}</td>
+                  <td>{request.auto_status || 'No'}</td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <p>No approved requests found</p>
+    )}
+
+    {/* Rejected Requests Table */}
+    <h2>Rejected Requests</h2>
+    {requests.filter(request => request.status === 'Rejected').length > 0 ? (
+      <div className="table-container">
+        <table className="dashboard-table">
+          <thead>
+            <tr>
+              <th>Request ID</th>
+              <th>Course Code</th>
+              <th>Course Title</th>
+              <th>Reason</th>
+              <th>Justification</th>
+              <th>Term Requested</th>
+              <th>Student Name</th>
+              <th>Status</th>
+              <th>Processed Automatically</th>
+            </tr>
+          </thead>
+          <tbody>
+            {requests
+              .filter(request => request.status === 'Rejected')
+              .map(request => (
+                <tr key={request.request_id}>
+                  <td>{request.request_id}</td>
+                  <td>{request.course_code}</td>
+                  <td>{request.course_title}</td>
+                  <td>{request.reason_to_take}</td>
+                  <td>{request.justification}</td>
+                  <td>{request.term_requested}</td>
+                  <td>{`${request.first_name} ${request.last_name}`}</td>
+                  <td>{request.status}</td>
+                  <td>{request.auto_status || 'No'}</td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <p>No rejected requests found</p>
+    )}
 
         {showModal && (
           <div className="modal">

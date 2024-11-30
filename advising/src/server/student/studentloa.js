@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */
 import db from '../db/db.js';
-import { evaluateAutoProcessing } from '../utils/autoProcessingRules.js';
+import { sendEmail } from '../utils/email.js';
 
 
 
@@ -38,104 +38,83 @@ const getStudentData = async (req, res) => {
   }
 };
 
+
+
 const submitWaiverRequest = async (req, res) => {
-  console.log('Raw Request Body:', req.body);
-
   const {
-    classRequest, // should contain course code
-    reason,
-    detailedReason,
-    seniorDesignRequest = 'no',
-    term,
-    coopWaiver = 'no',
-    submitted_by,
-  } = req.body;
-
-  console.log('Extracted Values:', {
     classRequest,
     reason,
     detailedReason,
-    seniorDesignRequest,
+    
     term,
-    coopWaiver,
+    
     submitted_by,
-  });
+  } = req.body;
 
   if (!classRequest || !reason || !submitted_by) {
     return res.status(400).json({ msg: 'Missing required fields' });
   }
 
   try {
+    // Fetch course details
     const [courseRows] = await db.query('SELECT course_title FROM courses WHERE course_code = ?', [classRequest]);
-    const course_title = courseRows.length > 0 ? courseRows[0].course_title : null;
 
-    if (!course_title) {
-      console.warn(`Course not found for course code: ${classRequest}`);
+    if (!courseRows.length) {
+      console.warn(`No course found for code: ${classRequest}`);
       return res.status(400).json({ msg: 'Course not found.' });
     }
+    const course_title = courseRows[0].course_title;
 
-    const facultyQuery = `
-      SELECT fc.faculty_id
-      FROM faculty_courses fc
-      JOIN faculty f ON fc.faculty_id = f.university_id
-      WHERE fc.course_code = ?;
-    `;
-    const [facultyRows] = await db.query(facultyQuery, [classRequest]);
-    const facultyId = facultyRows.length > 0 ? facultyRows[0].faculty_id : null;
+    // Fetch advisor information for the student
+    const [advisorRows] = await db.query(
+      `SELECT aa.email_id AS advisor_email, aa.first_name, aa.last_name
+       FROM academic_advisors aa
+       JOIN advisor_student_relation ar ON aa.university_id = ar.advisor_id
+       WHERE ar.student_id = ?`,
+      [submitted_by]
+    );
 
-    if (!facultyId) {
-      console.warn(`No faculty found for course code: ${classRequest}`);
-      return res.status(400).json({ msg: `No faculty available for course code ${classRequest}.` });
+    if (!advisorRows.length) {
+      console.warn(`No advisor found for student: ${submitted_by}`);
+      return res.status(400).json({ msg: 'No advisor found for the student.' });
     }
 
-    const request = {
-      course_code: classRequest,
-      reason_to_take: reason,
-      justification: detailedReason,
-      term_requested: term,
-      submitted_by,
-    };
+    const { advisor_email, first_name: advisorFirstName, last_name: advisorLastName } = advisorRows[0];
 
-    // Step 1: Evaluate auto-processing logic
-    const { status, reason: autoReason } = await evaluateAutoProcessing(request);
-
-    // Determine auto_status
-    const autoStatus =
-      status === 'Approved' ? 'Auto-Approved' : status === 'Rejected' ? 'Auto-Rejected' : null;
-
-    console.log('Auto-processing result:', { status, autoReason, autoStatus });
-
-    // Step 2: Insert request into the database
+    // Insert waiver request into the database
     const waiverQuery = `
       INSERT INTO prerequisite_waivers 
-      (course_code, course_title, faculty_id, reason_to_take, justification, 
-      senior_design_request, status, term_requested, coop_request, jd_document_path, submitted_by, auto_processed, auto_status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+      (course_code, course_title, reason_to_take, justification, term_requested, submitted_by)
+      VALUES (?, ?, ?, ?, ?, ?);
     `;
+    await db.query(waiverQuery, [classRequest, course_title, reason, detailedReason, term, submitted_by]);
 
-    const [result] = await db.query(waiverQuery, [
-      classRequest,
-      course_title,
-      facultyId,
-      reason,
-      detailedReason,
-      seniorDesignRequest === 'yes' ? 1 : 0,
-      status, // Use status from auto-processing logic
-      term,
-      coopWaiver === 'yes' ? 1 : 0,
-      null, // handle jdDocument if uploaded
-      submitted_by,
-      status !== 'Pending' ? 1 : 0, // auto_processed flag
-      autoStatus,
-    ]);
+    // Send email notification to the advisor
+    if (advisor_email) {
+      const emailSubject = `New Prerequisite Waiver Request: ${course_title}`;
+      const emailBody = `
+        Dear ${advisorFirstName} ${advisorLastName},
 
-    console.log('Waiver submission result:', result);
+        A new prerequisite waiver request has been submitted by the student with University ID: ${submitted_by}.
 
-    res.status(200).json({
-      success: true,
-      msg: `Prerequisite waiver request ${status.toLowerCase()}.`,
-      reason: autoReason,
-    });
+        Details:
+        - **Course Code:** ${classRequest}
+        - **Course Title:** ${course_title}
+        - **Term Requested:** ${term}
+        - **Reason:** ${reason}
+        - **Detailed Reason:** ${detailedReason}
+
+        Please log in to the advisor dashboard to review and process the request.
+
+        Best regards,
+        University Waiver System
+      `;
+
+      await sendEmail(advisor_email, emailSubject, emailBody);
+      console.log(`Email sent to advisor (${advisor_email})`);
+    }
+
+    res.status(200).json({ success: true, msg: 'Prerequisite waiver request submitted successfully.' });
   } catch (err) {
     console.error('Error submitting waiver request:', err);
     res.status(500).json({ msg: 'Server error' });

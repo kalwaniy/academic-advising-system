@@ -102,19 +102,17 @@ const [selectedRequestId, setSelectedRequestId] = useState(null);
         headers: { Authorization: `Bearer ${token}` },
       });
   
-      if (!response.ok) {
-        const errorText = await response.text(); // Log full error response
-        console.error('Error completing review:', errorText);
-        throw new Error('Failed to complete review.');
+      if (response.ok) {
+        alert('Review completed successfully! An alert has been sent to the department chair.');
+        setRequests((prevRequests) =>
+          prevRequests.map((req) =>
+            req.request_id === requestId ? { ...req, status: 'Completed by Faculty' } : req
+          )
+        );
+      } else {
+        console.error('Error completing review:', await response.text());
+        alert('Failed to complete review.');
       }
-  
-      const data = await response.json();
-      alert('Review completed successfully!');
-      setRequests((prevRequests) =>
-        prevRequests.map((req) =>
-          req.request_id === requestId ? { ...req, status: 'In Review' } : req
-        )
-      );
     } catch (err) {
       console.error('Error completing review:', err);
       alert('Server error while completing review.');

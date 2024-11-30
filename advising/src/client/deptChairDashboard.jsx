@@ -2,9 +2,11 @@
 import React, { useEffect, useState } from 'react';
 import './styles/index.css';
 
+
 function DeptChairDashboard() {
   const [requests, setRequests] = useState([]);
-  const [facultyMembers, setFacultyMembers] = useState([]); // Faculty members list
+  const [completedRequests, setCompletedRequests] = useState([]); // New state for completed requests
+  const [facultyMembers, setFacultyMembers] = useState([]);
   const [error, setError] = useState('');
   const [studentDetails, setStudentDetails] = useState(null);
   const [latestAdvisorNote, setLatestAdvisorNote] = useState('');
@@ -14,8 +16,10 @@ function DeptChairDashboard() {
   const [pastCourses, setPastCourses] = useState([]);
   const [deptChairNote, setDeptChairNote] = useState('');
   const [selectedFaculty, setSelectedFaculty] = useState('');
+  const [facultyNotes, setFacultyNotes] = useState([]); // NEW: To store faculty notes
+  const [deptChairNotes, setDeptChairNotes] = useState([]); // NEW: To store department chair notes
 
-  // Fetch requests and faculty members
+
   useEffect(() => {
     const fetchRequests = async () => {
       const token = localStorage.getItem('token');
@@ -23,15 +27,17 @@ function DeptChairDashboard() {
         setError('Authentication error: No token found.');
         return;
       }
-
+  
       try {
         const response = await fetch('http://localhost:5000/api/department-chair/dashboard', {
           headers: { Authorization: `Bearer ${token}` },
         });
-
+  
         if (response.ok) {
           const data = await response.json();
-          setRequests(data.requests);
+          setRequests(data.requests.filter((req) => req.status === 'In-Review')); // Filter for "In-Review"
+          setCompletedRequests(data.completedRequests); // Set completed requests
+          console.log('Completed Requests:', data.completedRequests); // Debug log
           setFacultyMembers(data.facultyMembers);
         } else {
           const errorData = await response.json();
@@ -41,33 +47,35 @@ function DeptChairDashboard() {
         setError('Network error: Unable to fetch requests.');
       }
     };
-
+  
     fetchRequests();
   }, []);
+  
 
   const fetchStudentDetails = async (studentId, requestId) => {
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch(`http://localhost:5000/api/department-chair/student-details/${studentId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        const response = await fetch(`http://localhost:5000/api/department-chair/student-details/${studentId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
 
-      if (response.ok) {
-        const data = await response.json();
-        setStudentDetails(data);
-        setSelectedRequestId(requestId);
-        await fetchPastCourses(studentId);
-        await fetchLatestAdvisorNote(requestId);
-        await fetchDeptChairNote(requestId);
-        setShowModal(true);
-      } else {
-        const errorData = await response.json();
-        setError(errorData.msg || 'Error fetching student details.');
-      }
+        if (response.ok) {
+            const data = await response.json();
+            setStudentDetails(data);
+            setSelectedRequestId(requestId);
+
+            // Fetch all notes (faculty + department chair)
+            await fetchAllNotes(requestId);
+            setShowModal(true);
+        } else {
+            const errorData = await response.json();
+            setError(errorData.msg || 'Error fetching student details.');
+        }
     } catch (err) {
-      setError('Server error: Unable to fetch student details.');
+        setError('Server error: Unable to fetch student details.');
     }
-  };
+};
+
 
   const fetchPastCourses = async (studentId) => {
     const token = localStorage.getItem('token');
@@ -104,6 +112,30 @@ function DeptChairDashboard() {
       setLatestAdvisorNote('Error fetching advisor note.');
     }
   };
+
+  const fetchAllNotes = async (requestId) => {
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`http://localhost:5000/api/department-chair/notes/${requestId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (response.ok) {
+            const notes = await response.json();
+
+            // Separate notes by role
+            setFacultyNotes(notes.filter((note) => note.role === 'faculty'));
+            setDeptChairNotes(notes.filter((note) => note.role === 'dept_chair'));
+        } else {
+            alert('Failed to fetch notes for this request.');
+        }
+    } catch (err) {
+        console.error('Error fetching notes:', err);
+        alert('Error fetching notes for this request.');
+    }
+};
+
+  
 
   const fetchDeptChairNote = async (requestId) => {
     const token = localStorage.getItem('token');
@@ -158,21 +190,73 @@ function DeptChairDashboard() {
         },
         body: JSON.stringify({ facultyId }),
       });
-
+  
       if (response.ok) {
-        alert('Request sent to faculty successfully!');
+        alert('Request sent to faculty successfully! Email notification sent.');
         setRequests((prevRequests) =>
           prevRequests.map((req) =>
-            req.request_id === requestId ? { ...req, status: 'In Review with Facul' } : req
+            req.request_id === requestId ? { ...req, status: 'In Review with Faculty' } : req
           )
         );
       } else {
-        alert('Failed to send request to faculty.');
+        const errorData = await response.json();
+        alert(errorData.msg || 'Failed to send request to faculty.');
       }
     } catch (err) {
+      console.error('Error sending request to faculty:', err);
       alert('Server error while sending request to faculty.');
     }
   };
+  const handleApprove = async (requestId) => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`http://localhost:5000/api/department-chair/approve/${requestId}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      if (response.ok) {
+        alert('Request approved successfully!');
+        setRequests((prevRequests) =>
+          prevRequests.filter((req) => req.request_id !== requestId)
+        );
+      } else {
+        const errorData = await response.json();
+        alert(errorData.msg || 'Failed to approve request.');
+      }
+    } catch (err) {
+      alert('Server error while approving request.');
+    }
+  };
+  
+  const handleReject = async (requestId) => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`http://localhost:5000/api/department-chair/reject/${requestId}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      if (response.ok) {
+        alert('Request rejected successfully!');
+        setRequests((prevRequests) =>
+          prevRequests.filter((req) => req.request_id !== requestId)
+        );
+      } else {
+        const errorData = await response.json();
+        alert(errorData.msg || 'Failed to reject request.');
+      }
+    } catch (err) {
+      alert('Server error while rejecting request.');
+    }
+  };
+  
 
   const closeModal = () => {
     setShowModal(false);
@@ -235,6 +319,22 @@ function DeptChairDashboard() {
                     >
                       Send to Faculty
                     </button>
+
+                    <td>
+  <button
+    onClick={() => handleApprove(request.request_id)}
+    className="btn btn-success"
+  >
+    Approve
+  </button>
+  <button
+    onClick={() => handleReject(request.request_id)}
+    className="btn btn-danger"
+  >
+    Reject
+  </button>
+</td>
+
                   </td>
                 </tr>
               ))}
@@ -244,64 +344,145 @@ function DeptChairDashboard() {
       ) : (
         <p>No requests found</p>
       )}
+{/* Second Table: Completed by Faculty */}
+{completedRequests.length > 0 ? (
+  <div className="table-container">
+    <h2>Review by Faculty Completed</h2>
+    <table className="dashboard-table">
+      <thead>
+        <tr>
+          <th>Request ID</th>
+          <th>Course Code</th>
+          <th>Course Title</th>
+          <th>Student</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {completedRequests.map((request) => (
+          <tr key={request.request_id}>
+            <td>{request.request_id}</td>
+            <td>{request.course_code}</td>
+            <td>{request.course_title}</td>
+            <td>{`${request.first_name} ${request.last_name}`}</td>
+            <td>{request.status}</td>
+            <td>
+              <button
+                onClick={() => fetchStudentDetails(request.submitted_by, request.request_id)}
+                className="btn btn-primary"
+              >
+                View Details
+              </button>
+              <td>
+  <button
+    onClick={() => handleApprove(request.request_id)}
+    className="btn btn-success"
+  >
+    Approve
+  </button>
+  <button
+    onClick={() => handleReject(request.request_id)}
+    className="btn btn-danger"
+  >
+    Reject
+  </button>
+</td>
+
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+) : (
+  <p>No completed requests found</p>
+)}
 
       {/* Modal for Student Details */}
-      {showModal && studentDetails && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h2>Student Details</h2>
-            <p>
-              <strong>Name:</strong> {`${studentDetails.first_name} ${studentDetails.last_name}`}
-            </p>
-            <p>
-              <strong>Email:</strong> {studentDetails.email_id}
-            </p>
-            <p>
-              <strong>CGPA:</strong> {studentDetails.cgpa}
-            </p>
-            <p>
-              <strong>Program:</strong> {studentDetails.program}
-            </p>
-            <p>
-              <strong>Year Level:</strong> {studentDetails.year_level}
-            </p>
-            <h3>Past Courses</h3>
-            {pastCourses.length > 0 ? (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Course Code</th>
-                    <th>Title</th>
-                    <th>Term</th>
-                    <th>Grade</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pastCourses.map((course) => (
-                    <tr key={course.course_code}>
-                      <td>{course.course_code}</td>
-                      <td>{course.course_title}</td>
-                      <td>{course.term_taken}</td>
-                      <td>{course.grade}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <p>No past courses found.</p>
-            )}
-            <h3>Latest Advisor Note</h3>
-            <p>{latestAdvisorNote}</p>
-            <textarea
-              value={newNote}
-              onChange={(e) => setNewNote(e.target.value)}
-              placeholder="Add a note"
-            />
-            <button onClick={addNote}>Add Note</button>
-            <button onClick={closeModal}>Close</button>
-          </div>
-        </div>
+{showModal && studentDetails && (
+  <div className="modal-overlay">
+    <div className="modal-content">
+      <h2>Student Details</h2>
+      <p>
+        <strong>Name:</strong> {`${studentDetails.first_name} ${studentDetails.last_name}`}
+      </p>
+      <p>
+        <strong>Email:</strong> {studentDetails.email_id}
+      </p>
+      <p>
+        <strong>CGPA:</strong> {studentDetails.cgpa}
+      </p>
+      <p>
+        <strong>Program:</strong> {studentDetails.program}
+      </p>
+      <p>
+        <strong>Year Level:</strong> {studentDetails.year_level}
+      </p>
+      <h3>Past Courses</h3>
+      {pastCourses.length > 0 ? (
+        <table>
+          <thead>
+            <tr>
+              <th>Course Code</th>
+              <th>Title</th>
+              <th>Term</th>
+              <th>Grade</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pastCourses.map((course) => (
+              <tr key={course.course_code}>
+                <td>{course.course_code}</td>
+                <td>{course.course_title}</td>
+                <td>{course.term_taken}</td>
+                <td>{course.grade}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <p>No past courses found.</p>
       )}
+      <h3>Faculty Notes</h3>
+      {facultyNotes.length > 0 ? (
+        <ul>
+          {facultyNotes.map((note) => (
+            <li key={note.note_id}>
+              <p><strong>Created At:</strong> {new Date(note.created_at).toLocaleString()}</p>
+              <p>{note.note_text}</p>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>No faculty notes available.</p>
+      )}
+      <h3>Department Chair Notes</h3>
+      {deptChairNotes.length > 0 ? (
+        <ul>
+          {deptChairNotes.map((note) => (
+            <li key={note.note_id}>
+              <p><strong>Created At:</strong> {new Date(note.created_at).toLocaleString()}</p>
+              <p>{note.note_text}</p>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>No department chair notes available.</p>
+      )}
+      <h3>Latest Advisor Note</h3>
+      <p>{latestAdvisorNote}</p>
+      <textarea
+        value={newNote}
+        onChange={(e) => setNewNote(e.target.value)}
+        placeholder="Add a note"
+      />
+      <button onClick={addNote}>Add Note</button>
+      <button onClick={closeModal}>Close</button>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }

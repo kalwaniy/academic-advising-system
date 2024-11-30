@@ -2,6 +2,7 @@
 /* eslint-disable no-unused-vars */
 import db from '../db/db.js';
 import jwt from 'jsonwebtoken';
+import { sendEmail } from '../utils/email.js'; 
 
 export const getFacultyDashboard = async (req, res) => {
   try {
@@ -92,20 +93,59 @@ export const completeReview = async (req, res) => {
   const { requestId } = req.params;
 
   try {
-    const query = `
-      UPDATE prerequisite_waivers
-      SET status = 'In-Review'
-      WHERE request_id = ? AND status = 'In Review with Facul';
+    // Fetch department chair's email for the faculty's department
+    const deptChairQuery = `
+      SELECT dc.email_id, dc.first_name, dc.last_name
+      FROM department_chairs AS dc
+      JOIN faculty AS f ON dc.department = f.department
+      JOIN prerequisite_waivers AS pw ON pw.faculty_id = f.university_id
+      WHERE pw.request_id = ? AND pw.status = 'In Review with Facul'
+      LIMIT 1;
     `;
-    const [result] = await db.query(query, [requestId]);
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ msg: 'Request not found or already updated.' });
+    const [deptChairResult] = await db.query(deptChairQuery, [requestId]);
+
+    if (!deptChairResult || deptChairResult.length === 0) {
+      return res.status(404).json({ msg: "No department chair email found for the faculty's department." });
     }
 
-    res.status(200).json({ msg: 'Review status updated to "In Review".' });
+    const { email_id: deptChairEmail, first_name: firstName, last_name: lastName } = deptChairResult[0];
+
+    // Update the review status
+    const updateQuery = `
+      UPDATE prerequisite_waivers
+      SET status = 'Completed by Faculty'
+      WHERE request_id = ? AND status = 'In Review with Facul';
+    `;
+    const [updateResult] = await db.query(updateQuery, [requestId]);
+
+    if (updateResult.affectedRows === 0) {
+      return res.status(404).json({ msg: "Request not found or already updated." });
+    }
+
+    // Prepare email content
+    const subject = "Review Completion Notification";
+    const text = `
+      Dear ${firstName} ${lastName},
+
+      The review for request ID ${requestId} has been completed.
+
+      Best regards,
+      Your System
+    `;
+
+    // Use mail.js to send the email
+    sendEmail(deptChairEmail, subject, text)
+      .then(() => {
+        console.log("Email sent successfully!");
+        res.status(200).json({ msg: "Review completed and email sent." });
+      })
+      .catch((error) => {
+        console.error("Error sending email:", error);
+        res.status(500).json({ msg: "Review completed, but email notification failed." });
+      });
   } catch (err) {
-    console.error('Error updating review status:', err);
-    res.status(500).json({ error: 'Server error while updating review status.' });
+    console.error("Error completing review:", err);
+    res.status(500).json({ error: "Server error while completing review." });
   }
 };

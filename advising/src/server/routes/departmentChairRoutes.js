@@ -7,10 +7,12 @@ import { getDeptChairDashboard,
   getStudentDetails,
   getRequestNotes,
    addRequestNote,
-    getLatestAdvisorNote,
   getStudentPastCourses,
 getDeptChairNote,
-sendToFaculty }  from '../departmentchair/departmentChairDb.js'
+sendToFaculty,
+approveRequest,
+rejectRequest,
+getAllNotesByRequestId }  from '../departmentchair/departmentChairDb.js'
 const router = Router();
 
 
@@ -24,17 +26,18 @@ router.get('/notes/:requestId', verifyToken, getRequestNotes);
 // Add a new note to a request
 router.post('/notes/:requestId', verifyToken, addRequestNote);
 
-router.get('/latest-advisor-note/:requestId', verifyToken, getLatestAdvisorNote);
-
 router.get('/student-past-courses/:studentId', verifyToken, getStudentPastCourses);
 
 router.get('/dept-chair-note/:requestId', verifyToken, getDeptChairNote);
+
+router.get('/notes/:requestId', verifyToken, getAllNotesByRequestId);
 
 router.patch('/send-to-faculty/:requestId', sendToFaculty);
 
 
 
-
+router.patch('/approve/:requestId', approveRequest);
+router.patch('/reject/:requestId', rejectRequest);
 
 
 

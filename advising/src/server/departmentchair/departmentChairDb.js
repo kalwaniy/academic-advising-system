@@ -2,7 +2,7 @@
 /* eslint-disable no-undef */
 import db from '../db/db.js';
 import jwt from 'jsonwebtoken';
-
+import { sendEmail } from '../utils/email.js'; // Ensure this is correctly set up
 
 export const getDeptChairDashboard = async (req, res) => {
   try {
@@ -14,8 +14,8 @@ export const getDeptChairDashboard = async (req, res) => {
 
     const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Fetch requests
-    const query = `
+    // Fetch "In-Review" requests
+    const inReviewQuery = `
       SELECT 
         pw.request_id, pw.course_code, pw.course_title, pw.reason_to_take, 
         pw.justification, pw.term_requested, pw.submitted_by, 
@@ -24,15 +24,34 @@ export const getDeptChairDashboard = async (req, res) => {
       JOIN students AS s ON pw.submitted_by = s.university_id
       WHERE pw.status = 'In-Review';
     `;
-    const [requests] = await db.query(query);
+    const [inReviewRequests] = await db.query(inReviewQuery);
 
-    console.log('Fetched Requests:', requests); // Debug log
+    console.log('Fetched In-Review Requests:', inReviewRequests); // Debug log
+
+    // Fetch "Completed by Faculty" requests
+    const completedQuery = `
+      SELECT 
+        pw.request_id, pw.course_code, pw.course_title, pw.reason_to_take, 
+        pw.justification, pw.term_requested, pw.submitted_by, 
+        s.first_name, s.last_name, pw.status
+      FROM prerequisite_waivers AS pw
+      JOIN students AS s ON pw.submitted_by = s.university_id
+      WHERE pw.status = 'Completed by Faculty';
+    `;
+    const [completedRequests] = await db.query(completedQuery);
+
+    console.log('Fetched Completed Requests:', completedRequests); // Debug log
 
     // Fetch faculty members
     const facultyQuery = `SELECT user_id, username FROM users WHERE role = 'faculty';`;
     const [facultyMembers] = await db.query(facultyQuery);
 
-    res.status(200).json({ requests, facultyMembers });
+    // Return data for both request categories
+    res.status(200).json({
+      requests: inReviewRequests,
+      completedRequests: completedRequests,
+      facultyMembers,
+    });
   } catch (err) {
     console.error('Error fetching Dept Chair Dashboard:', err);
     res.status(500).json({ error: 'Server error' });
@@ -84,25 +103,37 @@ export const getStudentDetails = async (req, res) => {
 
   export const getRequestNotes = async (req, res) => {
     const { requestId } = req.params;
-  
+    const { role } = req.query; // Allow optional role filtering
+
     try {
-      const query = `
-        SELECT note_id, user_id, role, note_text, created_at
-        FROM request_notes
-        WHERE request_id = ?;
-      `;
-      const [notes] = await db.query(query, [requestId]);
-  
-      if (!notes.length) {
-        return res.status(404).json({ msg: 'No notes found for this request.' });
-      }
-  
-      res.status(200).json(notes);
+        let query = `
+            SELECT note_id, user_id, role, note_text, created_at
+            FROM request_notes
+            WHERE request_id = ?
+        `;
+
+        const queryParams = [requestId];
+
+        if (role) {
+            query += ` AND role = ?`;
+            queryParams.push(role);
+        }
+
+        query += ` ORDER BY created_at DESC`;
+
+        const [notes] = await db.query(query, queryParams);
+
+        if (!notes.length) {
+            return res.status(404).json({ msg: 'No notes found for this request.' });
+        }
+
+        res.status(200).json(notes);
     } catch (err) {
-      console.error('Error fetching notes:', err);
-      res.status(500).json({ error: 'Server error while fetching notes.' });
+        console.error('Error fetching notes:', err);
+        res.status(500).json({ error: 'Server error while fetching notes.' });
     }
-  };
+};
+
 
   export const addRequestNote = async (req, res) => {
     const { requestId } = req.params;
@@ -133,30 +164,37 @@ export const getStudentDetails = async (req, res) => {
     }
   };
 
-  export const getLatestAdvisorNote = async (req, res) => {
+  export const getAllNotesByRequestId = async (req, res) => {
     const { requestId } = req.params;
-  
+
     try {
-      const query = `
-        SELECT note_id, user_id, role, note_text, created_at
-        FROM request_notes
-        WHERE request_id = ? AND role = 'advisor'
-        ORDER BY created_at DESC
-        LIMIT 1;
-      `;
-      const [rows] = await db.query(query, [requestId]);
-  
-      if (rows.length === 0) {
-        return res.status(404).json({ msg: 'No advisor notes found for this request.' });
-      }
-  
-      res.status(200).json(rows[0]); // Return only the latest note
+        const query = `
+            SELECT 
+                note_id, user_id, role, note_text, created_at
+            FROM 
+                request_notes
+            WHERE 
+                request_id = ?
+            ORDER BY 
+                created_at DESC;
+        `;
+
+        const [notes] = await db.query(query, [requestId]);
+
+        if (!notes.length) {
+            return res.status(404).json({ msg: 'No notes found for this request.' });
+        }
+
+        res.status(200).json(notes);
     } catch (err) {
-      console.error('Error fetching the latest advisor note:', err);
-      res.status(500).json({ error: 'Server error while fetching the latest advisor note.' });
+        console.error('Error fetching notes:', err);
+        res.status(500).json({ error: 'Server error while fetching notes.' });
     }
-  };
+};
+
+
   
+
   export const getStudentPastCourses = async (req, res) => {
     const { studentId } = req.params;
   
@@ -209,6 +247,8 @@ export const getStudentDetails = async (req, res) => {
     }
   };
 
+ 
+
   export const sendToFaculty = async (req, res) => {
     const { requestId } = req.params;
     const { facultyId } = req.body;
@@ -218,9 +258,24 @@ export const getStudentDetails = async (req, res) => {
     }
   
     try {
+      // Fetch faculty details from the `faculty` table
+      const facultyQuery = `
+        SELECT email_id, first_name, last_name
+        FROM faculty
+        WHERE university_id = ?;
+      `;
+      const [facultyRows] = await db.query(facultyQuery, [facultyId]);
+  
+      if (facultyRows.length === 0) {
+        return res.status(404).json({ msg: 'Faculty not found.' });
+      }
+  
+      const { email_id: facultyEmail, first_name: firstName, last_name: lastName } = facultyRows[0];
+  
+      // Update the request status
       const query = `
         UPDATE prerequisite_waivers
-        SET status = 'In Review with Facul', faculty_id = ?
+        SET status = 'In Review with Faculty', faculty_id = ?
         WHERE request_id = ?;
       `;
       const [result] = await db.query(query, [facultyId, requestId]);
@@ -229,11 +284,76 @@ export const getStudentDetails = async (req, res) => {
         return res.status(404).json({ msg: 'Request not found or already updated.' });
       }
   
-      res.status(200).json({ msg: 'Request successfully assigned to faculty.' });
+      // Send an email notification to the faculty
+      const emailSubject = `New Request Assigned for Review (Request ID: ${requestId})`;
+      const emailBody = `
+        Dear ${firstName} ${lastName},
+  
+        A new prerequisite waiver request has been assigned to you for review.
+  
+        Request Details:
+        - Request ID: ${requestId}
+        - Status: In Review with Faculty
+  
+        Please log in to the system to review and take appropriate action.
+  
+        Best regards,
+        University Waiver System
+      `;
+  
+      await sendEmail(facultyEmail, emailSubject, emailBody);
+      console.log(`Email sent to faculty (${facultyEmail}).`);
+  
+      res.status(200).json({ msg: 'Request successfully assigned to faculty and email sent.' });
     } catch (err) {
-      console.error('Error assigning request to faculty:', err);
+      console.error('Error assigning request to faculty or sending email:', err);
       res.status(500).json({ error: 'Server error while assigning request.' });
     }
   };
   
+
+  export const approveRequest = async (req, res) => {
+    const { requestId } = req.params;
+  
+    try {
+      const query = `
+        UPDATE prerequisite_waivers
+        SET status = 'Approved'
+        WHERE request_id = ?;
+      `;
+      const [result] = await db.query(query, [requestId]);
+  
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ msg: 'Request not found or already updated.' });
+      }
+  
+      res.status(200).json({ msg: 'Request approved successfully.' });
+    } catch (err) {
+      console.error('Error approving request:', err);
+      res.status(500).json({ error: 'Server error while approving request.' });
+    }
+  };
+
+  
+  export const rejectRequest = async (req, res) => {
+    const { requestId } = req.params;
+  
+    try {
+      const query = `
+        UPDATE prerequisite_waivers
+        SET status = 'Rejected'
+        WHERE request_id = ?;
+      `;
+      const [result] = await db.query(query, [requestId]);
+  
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ msg: 'Request not found or already updated.' });
+      }
+  
+      res.status(200).json({ msg: 'Request rejected successfully.' });
+    } catch (err) {
+      console.error('Error rejecting request:', err);
+      res.status(500).json({ error: 'Server error while rejecting request.' });
+    }
+  };
   
