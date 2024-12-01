@@ -1,23 +1,24 @@
+/* eslint-disable no-unused-vars */
 /* eslint-disable no-undef */
 import db from '../db/db.js';
 import jwt from 'jsonwebtoken';
 import ExcelJS from 'exceljs';
 import { sendEmail } from '../utils/email.js';
+import logger, { logWithRequestContext } from '../utils/logger.js';
 
 export const getAdvisorDashboard = async (req, res) => {
+  logWithRequestContext(req, 'info', 'Fetching advisor dashboard...');
   try {
-    // Extract token and decode it
     const token = req.headers['authorization']?.split(' ')[1];
     if (!token) {
-      console.log('No token provided');
+      logWithRequestContext(req, 'warn', 'No token provided');
       return res.status(401).json({ error: 'No token provided' });
     }
 
     const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
     const advisorId = decodedToken.user_id;
-    console.log('Advisor ID from token:', advisorId);
+    logWithRequestContext(req, 'info', `Advisor ID from token: ${advisorId}`);
 
-    // Step 1: Fetch students assigned to this advisor
     const studentQuery = `
       SELECT student_id 
       FROM advisor_student_relation 
@@ -26,15 +27,13 @@ export const getAdvisorDashboard = async (req, res) => {
     const [studentRows] = await db.query(studentQuery, [advisorId]);
 
     if (studentRows.length === 0) {
-      console.warn('No students found for advisor:', advisorId);
+      logWithRequestContext(req, 'warn', `No students found for advisor: ${advisorId}`);
       return res.status(404).json({ msg: 'No students assigned to this advisor' });
     }
 
-    // Extract student IDs
     const studentIds = studentRows.map(row => row.student_id);
-    console.log('Student IDs:', studentIds);
+    logWithRequestContext(req, 'debug', `Fetched student IDs: ${JSON.stringify(studentIds)}`);
 
-    // Step 2: Fetch waiver requests for these students
     const requestsQuery = `
       SELECT 
         pw.request_id, pw.course_code, pw.course_title, pw.reason_to_take, 
@@ -45,26 +44,26 @@ export const getAdvisorDashboard = async (req, res) => {
       JOIN students AS s ON pw.submitted_by = s.university_id
       WHERE pw.submitted_by IN (?);
     `;
-
     const [requests] = await db.query(requestsQuery, [studentIds]);
 
     if (requests.length === 0) {
+      logWithRequestContext(req, 'info', `No waiver requests found for advisor ${advisorId}`);
       return res.status(404).json({ msg: 'No waiver requests found for assigned students' });
     }
 
-    console.log('Requests fetched:', requests);
+    logWithRequestContext(req, 'debug', `Fetched waiver requests: ${JSON.stringify(requests)}`);
     res.status(200).json(requests);
   } catch (err) {
-    console.error('Error in advisor dashboard:', err);
+    logWithRequestContext(req, 'error', `Error in advisor dashboard: ${err.message}`);
     res.status(500).json({ error: 'Server error' });
   }
 };
 
 export const getStudentDetails = async (req, res) => {
+  logWithRequestContext(req, 'info', 'Fetching student details...');
   const { studentId } = req.params;
 
   try {
-    // Fetch student details
     const studentQuery = `
       SELECT 
         s.university_id, s.first_name, s.last_name, s.email_id, 
@@ -76,12 +75,13 @@ export const getStudentDetails = async (req, res) => {
     const [studentRows] = await db.query(studentQuery, [studentId]);
 
     if (studentRows.length === 0) {
+      logWithRequestContext(req, 'warn', `Student not found: ${studentId}`);
       return res.status(404).json({ msg: 'Student not found' });
     }
 
     const studentData = studentRows[0];
+    logWithRequestContext(req, 'debug', `Fetched student data: ${JSON.stringify(studentData)}`);
 
-    // Fetch course log
     const courseLogQuery = `
       SELECT sc.course_code, c.course_title, sc.term_taken, sc.grade
       FROM student_courses sc
@@ -90,8 +90,8 @@ export const getStudentDetails = async (req, res) => {
     `;
     const [courseLogRows] = await db.query(courseLogQuery, [studentId]);
     studentData.courseLog = courseLogRows;
+    logWithRequestContext(req, 'debug', `Fetched course log: ${JSON.stringify(courseLogRows)}`);
 
-    // Fetch course prerequisites
     const prerequisitesQuery = `
       SELECT cp.prerequisite_course_code, c.course_title AS prerequisite_title
       FROM course_prerequisites cp
@@ -100,15 +100,15 @@ export const getStudentDetails = async (req, res) => {
     `;
     const [prerequisitesRows] = await db.query(prerequisitesQuery, [studentData.courseLog[0]?.course_code || '']);
     studentData.prerequisites = prerequisitesRows;
-
-    console.log('Fetched Student Details with Prerequisites:', studentData);
+    logWithRequestContext(req, 'debug', `Fetched prerequisites: ${JSON.stringify(prerequisitesRows)}`);
 
     res.status(200).json(studentData);
   } catch (err) {
-    console.error('Error fetching student details:', err);
+    logWithRequestContext(req, 'error', `Error fetching student details: ${err.message}`);
     res.status(500).json({ error: 'Server error' });
   }
 };
+
 
 
 export const getAdvisorUserInfo = async (req, res) => {
@@ -134,9 +134,14 @@ export const getAdvisorUserInfo = async (req, res) => {
 };
 
 export const updateWaiverRequest = async (req, res) => {
+  logWithRequestContext(req, 'info', 'Updating waiver request...');
   try {
     const { requestId } = req.params;
     const { course_code, course_title, reason_to_take, justification, term_requested, status } = req.body;
+
+    // Log input parameters
+    logWithRequestContext(req, 'debug', `Request ID: ${requestId}`);
+    logWithRequestContext(req, 'debug', `Update Data: ${JSON.stringify({ course_code, course_title, reason_to_take, justification, term_requested, status })}`);
 
     // Ensure only valid fields are updated
     const updateQuery = `
@@ -161,16 +166,22 @@ export const updateWaiverRequest = async (req, res) => {
       requestId,
     ]);
 
+    // Log database response
+    logWithRequestContext(req, 'debug', `Database response: ${JSON.stringify(result)}`);
+
     if (result.affectedRows === 0) {
+      logWithRequestContext(req, 'warn', `Waiver request not found or already updated for Request ID: ${requestId}`);
       return res.status(404).json({ msg: 'Request not found' });
     }
 
+    logWithRequestContext(req, 'info', `Waiver request updated successfully for Request ID: ${requestId}`);
     res.status(200).json({ msg: 'Request updated successfully' });
   } catch (err) {
-    console.error('Error updating request:', err);
+    logWithRequestContext(req, 'error', `Error updating waiver request: ${err.message}`);
     res.status(500).json({ error: 'Server error' });
   }
 };
+
 
 export const getCourses = async (req, res) => {
   try {
@@ -219,21 +230,24 @@ export const getNotesByRequestId = async (req, res) => {
 
 
 export const upsertNote = async (req, res) => {
+  logWithRequestContext(req, 'info', 'Upserting note...');
   try {
     const { requestId } = req.params;
     const { content, role } = req.body;
     const userId = req.user_id; // Extracted from middleware
 
-    // Debug logs
-    console.log('Request ID:', requestId);
-    console.log('Note Content:', content);
-    console.log('User ID (from middleware):', userId); // Check this log
+    // Log critical input details
+    logWithRequestContext(req, 'debug', `Request ID: ${requestId}`);
+    logWithRequestContext(req, 'debug', `Note Content: ${content}`);
+    logWithRequestContext(req, 'debug', `Role: ${role || 'Advisor'}, User ID: ${userId}`);
 
     if (!content) {
+      logWithRequestContext(req, 'warn', 'Note content is required but missing');
       return res.status(400).json({ error: 'Note content is required' });
     }
 
     if (!userId) {
+      logWithRequestContext(req, 'warn', 'User ID is missing from the request');
       return res.status(401).json({ error: 'User ID is required' });
     }
 
@@ -246,77 +260,117 @@ export const upsertNote = async (req, res) => {
 
     const [result] = await db.query(query, [requestId, userId, role || 'Advisor', content]);
 
+    logWithRequestContext(req, 'info', `Note upserted successfully for Request ID: ${requestId}`);
     res.status(200).json({ msg: 'Note saved successfully', result });
   } catch (error) {
-    console.error('Error saving note:', error);
+    logWithRequestContext(req, 'error', `Error upserting note: ${error.message}`);
     res.status(500).json({ error: 'Server error' });
   }
 };
 
-
-
-
 export const addAdvisorNote = async (req, res) => {
+  logWithRequestContext(req, 'info', 'Adding advisor note...');
   try {
     const { requestId } = req.params;
     const { content } = req.body;
     const userId = req.user_id; // Extract from middleware
     const role = req.userRole || 'Advisor';
 
-    // Log all critical variables
-    console.log('Request ID:', requestId);
-    console.log('Note Content:', content);
-    console.log('User ID (from middleware):', userId);
-    console.log('Role:', role);
+    // Log critical input details
+    logWithRequestContext(req, 'debug', `Request ID: ${requestId}`);
+    logWithRequestContext(req, 'debug', `Note Content: ${content}`);
+    logWithRequestContext(req, 'debug', `Role: ${role}, User ID: ${userId}`);
 
     if (!content) {
+      logWithRequestContext(req, 'warn', 'Note content is required but missing');
       return res.status(400).json({ error: 'Note content is required' });
     }
 
     if (!userId) {
+      logWithRequestContext(req, 'warn', 'User ID is missing from the request');
       return res.status(401).json({ error: 'User ID is required' });
     }
 
-    // Database query
     const query = `
       INSERT INTO request_notes (request_id, user_id, role, note_text, created_at)
       VALUES (?, ?, ?, ?, NOW())
       ON DUPLICATE KEY UPDATE 
         note_text = VALUES(note_text), created_at = NOW();
     `;
-    console.log('Executing query with parameters:', [requestId, userId, role, content]);
 
     const [result] = await db.query(query, [requestId, userId, role, content]);
 
-    console.log('Query executed successfully:', result);
+    logWithRequestContext(req, 'info', `Advisor note added successfully for Request ID: ${requestId}`);
     res.status(200).json({ msg: 'Note added successfully', result });
   } catch (error) {
-    console.error('Error adding note:', error);
+    logWithRequestContext(req, 'error', `Error adding advisor note: ${error.message}`);
     res.status(500).json({ error: 'Server error' });
   }
 };
 
-
 export const generateReport = async (req, res) => {
+  logWithRequestContext(req, 'info', 'Generating report...');
   try {
-      const query = `
-          SELECT 
-              pw.course_code AS Course,
-              COUNT(*) AS TotalRequests,
-              AVG(ai.CGPA) AS AverageGPA,
-              pw.status AS Status
-          FROM prerequisite_waivers pw
-          JOIN students s ON pw.submitted_by = s.university_id
-          JOIN student_academic_info ai ON s.university_id = ai.university_id
-          GROUP BY pw.course_code, pw.status
-          ORDER BY TotalRequests DESC;
-      `;
+    const query = `
+      SELECT 
+          pw.course_code AS Course,
+          COUNT(*) AS TotalRequests,
+          AVG(ai.CGPA) AS AverageGPA,
+          pw.status AS Status
+      FROM prerequisite_waivers pw
+      JOIN students s ON pw.submitted_by = s.university_id
+      JOIN student_academic_info ai ON s.university_id = ai.university_id
+      GROUP BY pw.course_code, pw.status
+      ORDER BY TotalRequests DESC;
+    `;
 
-      const [results] = await db.query(query); // Use your database client
-      res.status(200).json({ success: true, data: results });
+    const [results] = await db.query(query);
+    logWithRequestContext(req, 'debug', `Report data fetched: ${JSON.stringify(results)}`);
+    res.status(200).json({ success: true, data: results });
   } catch (error) {
-      console.error('Error generating report:', error);
-      res.status(500).json({ success: false, message: 'Internal server error' });
+    logWithRequestContext(req, 'error', `Error generating report: ${error.message}`);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+export const downloadExcelReport = async (req, res) => {
+  logWithRequestContext(req, 'info', 'Generating Excel report...');
+  try {
+    const query = `
+      SELECT 
+          pw.course_code AS Course,
+          COUNT(*) AS TotalRequests,
+          AVG(ai.CGPA) AS AverageGPA,
+          pw.status AS Status
+      FROM prerequisite_waivers pw
+      JOIN students s ON pw.submitted_by = s.university_id
+      JOIN student_academic_info ai ON s.university_id = ai.university_id
+      GROUP BY pw.course_code, pw.status
+      ORDER BY TotalRequests DESC;
+    `;
+
+    const [results] = await db.query(query);
+    logWithRequestContext(req, 'debug', `Data for Excel report: ${JSON.stringify(results)}`);
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Report');
+    worksheet.columns = [
+      { header: 'Course', key: 'Course', width: 20 },
+      { header: 'Total Requests', key: 'TotalRequests', width: 15 },
+      { header: 'Average GPA', key: 'AverageGPA', width: 15 },
+      { header: 'Status', key: 'Status', width: 15 },
+    ];
+
+    worksheet.addRows(results);
+    const buffer = await workbook.xlsx.writeBuffer();
+    logWithRequestContext(req, 'info', 'Excel report generated successfully');
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="report.xlsx"');
+    res.send(buffer);
+  } catch (error) {
+    logWithRequestContext(req, 'error', `Error exporting Excel report: ${error.message}`);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -388,45 +442,4 @@ export const sendToDeptChair = async (req, res) => {
 };
 
 
-export const downloadExcelReport = async (req, res) => {
-  try {
-      const query = `
-          SELECT 
-              pw.course_code AS Course,
-              COUNT(*) AS TotalRequests,
-              AVG(ai.CGPA) AS AverageGPA,
-              pw.status AS Status
-          FROM prerequisite_waivers pw
-          JOIN students s ON pw.submitted_by = s.university_id
-          JOIN student_academic_info ai ON s.university_id = ai.university_id
-          GROUP BY pw.course_code, pw.status
-          ORDER BY TotalRequests DESC;
-      `;
 
-      const [results] = await db.query(query);
-
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('Report');
-
-      // Add Header Row
-      worksheet.columns = [
-          { header: 'Course', key: 'Course', width: 20 },
-          { header: 'Total Requests', key: 'TotalRequests', width: 15 },
-          { header: 'Average GPA', key: 'AverageGPA', width: 15 },
-          { header: 'Status', key: 'Status', width: 15 },
-      ];
-
-      // Add Data Rows
-      worksheet.addRows(results);
-
-      // Generate Excel File
-      const buffer = await workbook.xlsx.writeBuffer();
-
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', 'attachment; filename="report.xlsx"');
-      res.send(buffer);
-  } catch (error) {
-      console.error('Error exporting Excel report:', error);
-      res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-};

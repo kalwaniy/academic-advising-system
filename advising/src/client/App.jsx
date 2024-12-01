@@ -14,6 +14,7 @@ import Reports from './reports';
 import DeptChairDashboard from './deptChairDashboard';
 import FacultyLanding from './facultyLanding';
 import FacultyDashboard from './facultyDashboard';
+import DeptChairLog from './deptchairlog';
 
 // ProtectedRoute component to enforce role-based access control
 function ProtectedRoute({ element: Component, roleRequired }) {
@@ -71,6 +72,11 @@ function App() {
        <Route
         path="/department-dashboard"
         element={<ProtectedRoute element={<DeptChairDashboard />} roleRequired="dept_chair" />}
+      />
+
+      <Route
+        path="/department-logs"
+        element={<ProtectedRoute element={<DeptChairLog />} roleRequired="dept_chair" />}
       />
 
      <Route

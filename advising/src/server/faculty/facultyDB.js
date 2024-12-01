@@ -3,6 +3,9 @@
 import db from '../db/db.js';
 import jwt from 'jsonwebtoken';
 import { sendEmail } from '../utils/email.js'; 
+import logger from '../utils/logger.js';
+import { logWithRequestContext } from '../utils/logger.js';
+
 
 export const getFacultyDashboard = async (req, res) => {
   try {
@@ -60,13 +63,14 @@ export const getFacultyRequestNotes = async (req, res) => {
 };
 
 export const addFacultyNote = async (req, res) => {
+  logWithRequestContext(req, 'info', `Attempting to add a faculty note for Request ID: ${req.params.requestId}.`);
   const { requestId } = req.params;
   const { note_text } = req.body;
   const userId = req.user_id; // Extracted from token via middleware
   const role = 'faculty'; // Hardcoded role for faculty notes
 
   if (!note_text || !requestId) {
-    console.error('Missing required fields:', { note_text, requestId });
+    logWithRequestContext(req, 'warn', 'Missing required fields for adding faculty note.', { note_text, requestId });
     return res.status(400).json({ error: 'Note text and request ID are required.' });
   }
 
@@ -78,52 +82,52 @@ export const addFacultyNote = async (req, res) => {
     const [result] = await db.query(query, [requestId, userId, role, note_text]);
 
     if (result.affectedRows === 0) {
+      logWithRequestContext(req, 'error', `Failed to add faculty note for Request ID: ${requestId}.`);
       return res.status(500).json({ error: 'Failed to add note.' });
     }
 
+    logWithRequestContext(req, 'info', `Faculty note added successfully for Request ID: ${requestId}.`);
     res.status(201).json({ msg: 'Note added successfully.' });
   } catch (err) {
-    console.error('Error adding note:', err);
+    logWithRequestContext(req, 'error', `Error adding faculty note for Request ID: ${requestId} - ${err.message}`, { stack: err.stack });
     res.status(500).json({ error: 'Server error while adding note.' });
   }
 };
 
-
 export const completeReview = async (req, res) => {
+  logWithRequestContext(req, 'info', `Attempting to complete review for Request ID: ${req.params.requestId}.`);
   const { requestId } = req.params;
 
   try {
-    // Fetch department chair's email for the faculty's department
     const deptChairQuery = `
       SELECT dc.email_id, dc.first_name, dc.last_name
       FROM department_chairs AS dc
       JOIN faculty AS f ON dc.department = f.department
       JOIN prerequisite_waivers AS pw ON pw.faculty_id = f.university_id
-      WHERE pw.request_id = ? AND pw.status = 'In Review with Facul'
+      WHERE pw.request_id = ? AND pw.status = 'In Review with Faculty'
       LIMIT 1;
     `;
-
     const [deptChairResult] = await db.query(deptChairQuery, [requestId]);
 
     if (!deptChairResult || deptChairResult.length === 0) {
+      logWithRequestContext(req, 'warn', `No department chair email found for Request ID: ${requestId}.`);
       return res.status(404).json({ msg: "No department chair email found for the faculty's department." });
     }
 
     const { email_id: deptChairEmail, first_name: firstName, last_name: lastName } = deptChairResult[0];
 
-    // Update the review status
     const updateQuery = `
       UPDATE prerequisite_waivers
       SET status = 'Completed by Faculty'
-      WHERE request_id = ? AND status = 'In Review with Facul';
+      WHERE request_id = ? AND status = 'In Review with Faculty';
     `;
     const [updateResult] = await db.query(updateQuery, [requestId]);
 
     if (updateResult.affectedRows === 0) {
+      logWithRequestContext(req, 'warn', `Request with ID: ${requestId} not found or already updated.`);
       return res.status(404).json({ msg: "Request not found or already updated." });
     }
 
-    // Prepare email content
     const subject = "Review Completion Notification";
     const text = `
       Dear ${firstName} ${lastName},
@@ -134,18 +138,17 @@ export const completeReview = async (req, res) => {
       Your System
     `;
 
-    // Use mail.js to send the email
     sendEmail(deptChairEmail, subject, text)
       .then(() => {
-        console.log("Email sent successfully!");
+        logWithRequestContext(req, 'info', `Review completed and email sent successfully for Request ID: ${requestId}.`);
         res.status(200).json({ msg: "Review completed and email sent." });
       })
       .catch((error) => {
-        console.error("Error sending email:", error);
+        logWithRequestContext(req, 'error', `Review completed but email notification failed for Request ID: ${requestId} - ${error.message}`, { stack: error.stack });
         res.status(500).json({ msg: "Review completed, but email notification failed." });
       });
   } catch (err) {
-    console.error("Error completing review:", err);
+    logWithRequestContext(req, 'error', `Error completing review for Request ID: ${requestId} - ${err.message}`, { stack: err.stack });
     res.status(500).json({ error: "Server error while completing review." });
   }
 };

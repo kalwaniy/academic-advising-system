@@ -3,17 +3,13 @@
 import db from '../db/db.js';
 import jwt from 'jsonwebtoken';
 import { sendEmail } from '../utils/email.js'; // Ensure this is correctly set up
+import logger from '../utils/logger.js';
+import { logWithRequestContext } from '../utils/logger.js';
 
 export const getDeptChairDashboard = async (req, res) => {
   try {
-    const token = req.headers['authorization']?.split(' ')[1];
-    if (!token) {
-      console.error('No token provided');
-      return res.status(401).json({ error: 'No token provided' });
-    }
-
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-
+      logWithRequestContext(req, 'info', 'Fetching Dept Chair Dashboard');
+      
     // Fetch "In-Review" requests
     const inReviewQuery = `
       SELECT 
@@ -135,34 +131,39 @@ export const getStudentDetails = async (req, res) => {
 };
 
 
-  export const addRequestNote = async (req, res) => {
-    const { requestId } = req.params;
-    const { note_text } = req.body;
-    const userId = req.user_id; // Extracted from token via middleware
-    const role = req.userRole; // Extracted role from middleware
-  
-    if (!note_text || !requestId || !role) {
-      console.error('Missing required fields:', { note_text, requestId, role });
+export const addRequestNote = async (req, res) => {
+  logWithRequestContext(req, 'info', 'Attempting to add a request note...');
+  const { requestId } = req.params;
+  const { note_text } = req.body;
+  const userId = req.user_id; // Extracted from token via middleware
+  const role = req.userRole; // Extracted role from middleware
+
+  // Validate input
+  if (!note_text || !requestId || !role) {
+      logWithRequestContext(req, 'warn', 'Missing required fields for adding note');
       return res.status(400).json({ error: 'Note text, request ID, and role are required.' });
-    }
-  
-    try {
+  }
+
+  try {
       const query = `
-        INSERT INTO request_notes (request_id, user_id, role, note_text)
-        VALUES (?, ?, ?, ?);
+          INSERT INTO request_notes (request_id, user_id, role, note_text)
+          VALUES (?, ?, ?, ?);
       `;
       const [result] = await db.query(query, [requestId, userId, role, note_text]);
-  
+
       if (result.affectedRows === 0) {
-        return res.status(500).json({ error: 'Failed to add note.' });
+          logWithRequestContext(req, 'error', `Failed to add note for Request ID: ${requestId}`);
+          return res.status(500).json({ error: 'Failed to add note.' });
       }
-  
+
+      logWithRequestContext(req, 'info', `Note added successfully for Request ID: ${requestId}`);
       res.status(201).json({ msg: 'Note added successfully.' });
-    } catch (err) {
-      console.error('Error adding note:', err);
+  } catch (err) {
+      logWithRequestContext(req, 'error', `Error adding note: ${err.message}`);
       res.status(500).json({ error: 'Server error while adding note.' });
-    }
-  };
+  }
+};
+
 
   export const getAllNotesByRequestId = async (req, res) => {
     const { requestId } = req.params;
@@ -250,110 +251,138 @@ export const getStudentDetails = async (req, res) => {
  
 
   export const sendToFaculty = async (req, res) => {
+    logWithRequestContext(req, 'info', `Attempting to assign Request ID: ${req.params.requestId} to Faculty.`);
     const { requestId } = req.params;
     const { facultyId } = req.body;
   
     if (!facultyId) {
-      return res.status(400).json({ msg: 'Faculty ID is required.' });
+        logWithRequestContext(req, 'warn', 'Faculty ID is missing from the request body.');
+        return res.status(400).json({ msg: 'Faculty ID is required.' });
     }
   
     try {
-      // Fetch faculty details from the `faculty` table
-      const facultyQuery = `
-        SELECT email_id, first_name, last_name
-        FROM faculty
-        WHERE university_id = ?;
-      `;
-      const [facultyRows] = await db.query(facultyQuery, [facultyId]);
+        // Fetch faculty details from the `faculty` table
+        const facultyQuery = `
+            SELECT email_id, first_name, last_name
+            FROM faculty
+            WHERE university_id = ?;
+        `;
+        const [facultyRows] = await db.query(facultyQuery, [facultyId]);
   
-      if (facultyRows.length === 0) {
-        return res.status(404).json({ msg: 'Faculty not found.' });
-      }
+        if (facultyRows.length === 0) {
+            logWithRequestContext(req, 'warn', `Faculty with ID: ${facultyId} not found.`);
+            return res.status(404).json({ msg: 'Faculty not found.' });
+        }
   
-      const { email_id: facultyEmail, first_name: firstName, last_name: lastName } = facultyRows[0];
+        const { email_id: facultyEmail, first_name: firstName, last_name: lastName } = facultyRows[0];
+        logWithRequestContext(req, 'info', `Faculty details fetched: ${firstName} ${lastName} (${facultyEmail}).`);
   
-      // Update the request status
-      const query = `
-        UPDATE prerequisite_waivers
-        SET status = 'In Review with Faculty', faculty_id = ?
-        WHERE request_id = ?;
-      `;
-      const [result] = await db.query(query, [facultyId, requestId]);
+        // Update the request status
+        const query = `
+            UPDATE prerequisite_waivers
+            SET status = 'In Review with Faculty', faculty_id = ?
+            WHERE request_id = ?;
+        `;
+        const [result] = await db.query(query, [facultyId, requestId]);
   
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ msg: 'Request not found or already updated.' });
-      }
+        if (result.affectedRows === 0) {
+            logWithRequestContext(req, 'warn', `Request with ID: ${requestId} not found or already updated.`);
+            return res.status(404).json({ msg: 'Request not found or already updated.' });
+        }
   
-      // Send an email notification to the faculty
-      const emailSubject = `New Request Assigned for Review (Request ID: ${requestId})`;
-      const emailBody = `
-        Dear ${firstName} ${lastName},
+        // Send an email notification to the faculty
+        const emailSubject = `New Request Assigned for Review (Request ID: ${requestId})`;
+        const emailBody = `
+            Dear ${firstName} ${lastName},
   
-        A new prerequisite waiver request has been assigned to you for review.
+            A new prerequisite waiver request has been assigned to you for review.
   
-        Request Details:
-        - Request ID: ${requestId}
-        - Status: In Review with Faculty
+            Request Details:
+            - Request ID: ${requestId}
+            - Status: In Review with Faculty
   
-        Please log in to the system to review and take appropriate action.
+            Please log in to the system to review and take appropriate action.
   
-        Best regards,
-        University Waiver System
-      `;
+            Best regards,
+            University Waiver System
+        `;
   
-      await sendEmail(facultyEmail, emailSubject, emailBody);
-      console.log(`Email sent to faculty (${facultyEmail}).`);
+        await sendEmail(facultyEmail, emailSubject, emailBody);
+        logWithRequestContext(req, 'info', `Email sent to faculty: ${facultyEmail} for Request ID: ${requestId}.`);
   
-      res.status(200).json({ msg: 'Request successfully assigned to faculty and email sent.' });
+        res.status(200).json({ msg: 'Request successfully assigned to faculty and email sent.' });
     } catch (err) {
-      console.error('Error assigning request to faculty or sending email:', err);
-      res.status(500).json({ error: 'Server error while assigning request.' });
+        logWithRequestContext(req, 'error', `Error assigning Request ID: ${requestId} to Faculty: ${err.message}`);
+        res.status(500).json({ error: 'Server error while assigning request.' });
     }
-  };
+};
+
   
 
-  export const approveRequest = async (req, res) => {
-    const { requestId } = req.params;
-  
-    try {
+export const approveRequest = async (req, res) => {
+  logWithRequestContext(req, 'info', `Attempting to approve Request ID: ${req.params.requestId}.`);
+  const { requestId } = req.params;
+
+  try {
       const query = `
-        UPDATE prerequisite_waivers
-        SET status = 'Approved'
-        WHERE request_id = ?;
+          UPDATE prerequisite_waivers
+          SET status = 'Approved'
+          WHERE request_id = ?;
       `;
       const [result] = await db.query(query, [requestId]);
-  
+
       if (result.affectedRows === 0) {
-        return res.status(404).json({ msg: 'Request not found or already updated.' });
+          logWithRequestContext(req, 'warn', `Request with ID: ${requestId} not found or already approved.`);
+          return res.status(404).json({ msg: 'Request not found or already updated.' });
       }
-  
+
+      logWithRequestContext(req, 'info', `Request ID: ${requestId} approved successfully.`);
       res.status(200).json({ msg: 'Request approved successfully.' });
-    } catch (err) {
-      console.error('Error approving request:', err);
+  } catch (err) {
+      logWithRequestContext(req, 'error', `Error approving Request ID: ${requestId} - ${err.message}`);
       res.status(500).json({ error: 'Server error while approving request.' });
+  }
+};
+
+export const rejectRequest = async (req, res) => {
+  logWithRequestContext(req, 'info', `Attempting to reject Request ID: ${req.params.requestId}.`);
+  const { requestId } = req.params;
+
+  try {
+      const query = `
+          UPDATE prerequisite_waivers
+          SET status = 'Rejected'
+          WHERE request_id = ?;
+      `;
+      const [result] = await db.query(query, [requestId]);
+
+      if (result.affectedRows === 0) {
+          logWithRequestContext(req, 'warn', `Request with ID: ${requestId} not found or already rejected.`);
+          return res.status(404).json({ msg: 'Request not found or already updated.' });
+      }
+
+      logWithRequestContext(req, 'info', `Request ID: ${requestId} rejected successfully.`);
+      res.status(200).json({ msg: 'Request rejected successfully.' });
+  } catch (err) {
+      logWithRequestContext(req, 'error', `Error rejecting Request ID: ${requestId} - ${err.message}`);
+      res.status(500).json({ error: 'Server error while rejecting request.' });
+  }
+};
+
+  
+
+  export const getAllLogs = async (req, res) => {
+    logger.info('Fetching all logs...');
+    try {
+      const query = `SELECT * FROM logs ORDER BY timestamp DESC`;
+      const [rows] = await db.query(query);
+  
+      logger.info('Fetched Logs', { count: rows.length });
+      res.status(200).json(rows);
+    } catch (error) {
+      logger.error('Error fetching logs', { error: error.message, stack: error.stack });
+      res.status(500).json({ error: 'Server error while fetching logs.' });
     }
   };
 
-  
-  export const rejectRequest = async (req, res) => {
-    const { requestId } = req.params;
-  
-    try {
-      const query = `
-        UPDATE prerequisite_waivers
-        SET status = 'Rejected'
-        WHERE request_id = ?;
-      `;
-      const [result] = await db.query(query, [requestId]);
-  
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ msg: 'Request not found or already updated.' });
-      }
-  
-      res.status(200).json({ msg: 'Request rejected successfully.' });
-    } catch (err) {
-      console.error('Error rejecting request:', err);
-      res.status(500).json({ error: 'Server error while rejecting request.' });
-    }
-  };
-  
+

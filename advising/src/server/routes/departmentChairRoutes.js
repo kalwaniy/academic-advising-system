@@ -12,7 +12,8 @@ getDeptChairNote,
 sendToFaculty,
 approveRequest,
 rejectRequest,
-getAllNotesByRequestId }  from '../departmentchair/departmentChairDb.js'
+getAllNotesByRequestId,
+getAllLogs }  from '../departmentchair/departmentChairDb.js'
 const router = Router();
 
 
@@ -39,6 +40,7 @@ router.patch('/send-to-faculty/:requestId', sendToFaculty);
 router.patch('/approve/:requestId', approveRequest);
 router.patch('/reject/:requestId', rejectRequest);
 
+router.get('/logs', getAllLogs);
 
 
 export default router;
