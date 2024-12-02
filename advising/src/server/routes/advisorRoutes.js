@@ -10,7 +10,9 @@ import {
   addAdvisorNote,
   generateReport,
   sendToDeptChair,
-  downloadExcelReport
+  downloadExcelReport,
+  getCompletedCoopReviews,
+  addNote
 } from '../advisor/advisordashboard.js'; // Import from the advisor folder
 import { verifyToken } from '../middleware/auth.js';
 
@@ -39,9 +41,11 @@ router.get('/report', generateReport);
 
 router.get('/download-excel-report', downloadExcelReport);
 
-
+router.get('/completed-coop-reviews', verifyToken, getCompletedCoopReviews);
 
 router.put('/send-to-dept-chair/:requestId', verifyToken, sendToDeptChair);
+
+router.post('/notes/:requestId', verifyToken, addNote);
 
 export default router;
 

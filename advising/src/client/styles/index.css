@@ -820,6 +820,80 @@ button[type="submit"]:hover {
   background-color: #f9f9f9;
 }
 
+.coordinator-dashboard {
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.error {
+  color: red;
+  margin-bottom: 10px;
+}
+
+.requests-table {
+  margin-bottom: 20px;
+}
+
+.requests-table table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.requests-table th,
+.requests-table td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: left;
+}
+
+.requests-table th {
+  background-color: #f4f4f4;
+}
+
+.request-details {
+  border: 1px solid #ddd;
+  padding: 20px;
+  background-color: #f9f9f9;
+}
+
+.verification-section {
+  margin-top: 20px;
+}
+
+.verification-section label {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.verification-section textarea {
+  width: 100%;
+  height: 80px;
+  margin-bottom: 10px;
+}
+
+.submit-button {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+}
+
+.submit-button:disabled {
+  background-color: #ccc;
+}
+
+.cancel-button {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+
 /* Responsive Styles */
 @media (max-width: 600px) {
   .modal-content {

@@ -45,11 +45,13 @@ const submitWaiverRequest = async (req, res) => {
     classRequest,
     reason,
     detailedReason,
-    
     term,
-    
     submitted_by,
   } = req.body;
+
+  // Extract seniorDesignRequest and coopWaiver
+  const seniorDesignRequest = req.body.seniorDesignRequest ? parseInt(req.body.seniorDesignRequest, 10) : 0;
+  const coopWaiver = req.body.coopWaiver ? parseInt(req.body.coopWaiver, 10) : 0;
 
   if (!classRequest || !reason || !submitted_by) {
     return res.status(400).json({ msg: 'Missing required fields' });
@@ -81,13 +83,26 @@ const submitWaiverRequest = async (req, res) => {
 
     const { advisor_email, first_name: advisorFirstName, last_name: advisorLastName } = advisorRows[0];
 
-    // Insert waiver request into the database
+    // Determine the status of the request
+    const status = coopWaiver === 1 ? 'Pending with COOP' : 'Pending';
+
+    // Insert waiver request into the database, including seniorDesignRequest and coopWaiver
     const waiverQuery = `
       INSERT INTO prerequisite_waivers 
-      (course_code, course_title, reason_to_take, justification, term_requested, submitted_by)
-      VALUES (?, ?, ?, ?, ?, ?);
+      (course_code, course_title, reason_to_take, justification, term_requested, submitted_by, senior_design_request, coop_request, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
     `;
-    await db.query(waiverQuery, [classRequest, course_title, reason, detailedReason, term, submitted_by]);
+    await db.query(waiverQuery, [
+      classRequest,
+      course_title,
+      reason,
+      detailedReason,
+      term,
+      submitted_by,
+      seniorDesignRequest,
+      coopWaiver,
+      status,
+    ]);
 
     // Send email notification to the advisor
     if (advisor_email) {
@@ -103,6 +118,8 @@ const submitWaiverRequest = async (req, res) => {
         - **Term Requested:** ${term}
         - **Reason:** ${reason}
         - **Detailed Reason:** ${detailedReason}
+        - **Senior Design Request:** ${seniorDesignRequest ? 'Yes' : 'No'}
+        - **COOP Waiver:** ${coopWaiver ? 'Yes' : 'No'}
 
         Please log in to the advisor dashboard to review and process the request.
 
@@ -120,6 +137,7 @@ const submitWaiverRequest = async (req, res) => {
     res.status(500).json({ msg: 'Server error' });
   }
 };
+
 
 
 // Function to get all available courses

@@ -9,6 +9,7 @@
   import advisorRoutes from './routes/advisorRoutes.js';
   import departmentChairRoutes from './routes/departmentChairRoutes.js';
   import facultyRoutes from './routes/facultyRoutes.js';
+  import coordinatorRoutes from './routes/coordinatorRoutes.js'
   import { verifyToken } from './middleware/auth.js';
 
   const app = express();
@@ -22,6 +23,7 @@
   app.use('/api/advisor', advisorRoutes);
   app.use('/api/department-chair', departmentChairRoutes);
   app.use('/api/faculty', facultyRoutes);
+  app.use('/api/coordinator', coordinatorRoutes)
 
 
   app.listen(PORT, () => {

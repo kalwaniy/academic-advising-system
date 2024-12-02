@@ -8,9 +8,9 @@ function FacultyDashboard() {
   const [showModal, setShowModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [notes, setNotes] = useState([]);
-const [newNote, setNewNote] = useState('');
-const [showNotesModal, setShowNotesModal] = useState(false);
-const [selectedRequestId, setSelectedRequestId] = useState(null);
+  const [newNote, setNewNote] = useState('');
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const [selectedRequestId, setSelectedRequestId] = useState(null);
 
 
   useEffect(() => {

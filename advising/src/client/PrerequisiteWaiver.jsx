@@ -84,14 +84,22 @@ function PrerequisiteWaiver() {
     // Prepare FormData and map uid to submitted_by explicitly
     const submitData = new FormData();
     submitData.append('submitted_by', formData.uid); // explicit mapping
-    Object.entries(formData).forEach(([key, value]) => {
-      if (key !== 'uid') submitData.append(key, value); // exclude uid as it's now mapped to submitted_by
-    });
   
-    // Log FormData to verify each key-value pair
-    for (let pair of submitData.entries()) {
-      console.log(`${pair[0]}: ${pair[1]}`);
+    // Convert seniorDesignRequest and coopWaiver to boolean equivalents (1/0)
+    submitData.append('seniorDesignRequest', formData.seniorDesignRequest === 'yes' ? 1 : 0);
+    submitData.append('coopWaiver', formData.coopWaiver === 'yes' ? 1 : 0);
+  
+    // Handle file upload for JD Document
+    if (formData.jdDocument) {
+      submitData.append('jdDocument', formData.jdDocument);
     }
+  
+    // Append other form data
+    Object.entries(formData).forEach(([key, value]) => {
+      if (!['uid', 'seniorDesignRequest', 'coopWaiver', 'jdDocument'].includes(key)) {
+        submitData.append(key, value); // exclude uid as it's now mapped to submitted_by
+      }
+    });
   
     fetch('http://localhost:5000/api/prerequisite-waiver/submit', {
       method: 'POST',
@@ -115,6 +123,7 @@ function PrerequisiteWaiver() {
       })
       .catch((err) => console.error('Error submitting form:', err));
   };
+  
   
   
 

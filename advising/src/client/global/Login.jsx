@@ -43,7 +43,9 @@ function LoginPage() {
         } else if (decodedToken.role === 'student') {
           navigate('/dashboard');
         } else if (decodedToken.role === 'faculty') {
-          navigate ('/faculty-landing');
+          navigate('/faculty-landing');
+        } else if (decodedToken.role === 'coordinator') {
+          navigate('/coordinator-dashboard');
         } else {
           setError('Role not recognized');
         }

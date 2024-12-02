@@ -11,7 +11,13 @@ function AdvisorDashboard() {
   const [currentRequest, setCurrentRequest] = useState(null);
   const [courseData, setCourseData] = useState([]); // Holds available course codes and titles
   const [selectedRequestId, setSelectedRequestId] = useState(null);
-  const [notes, setNotes] = useState('');
+  const [coopRequests, setCoopRequests] = useState([]); // New state for COOP requests
+  const [coopActions, setCoopActions] = useState({}); // State for COOP actions
+  const [notes, setNotes] = useState([]); // Change from '' to []
+  const [newNoteContent, setNewNoteContent] = useState('');
+  
+
+
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -30,6 +36,7 @@ function AdvisorDashboard() {
             if (response.ok) {
                 const data = await response.json();
                 setRequests(data);
+                setCoopRequests(data.coopRequests || []);
             } else {
                 const errorData = await response.json();
                 console.error('Error fetching requests:', errorData);
@@ -164,9 +171,9 @@ function AdvisorDashboard() {
   
       if (response.ok) {
         const notesData = await response.json();
-        setNotes(notesData[0]?.content || ''); // Handle existing notes
+        setNotes(notesData); // Set the array of notes
       } else {
-        setNotes('');
+        setNotes([]);
         console.error('API returned error:', await response.text());
       }
     } catch (error) {
@@ -174,6 +181,7 @@ function AdvisorDashboard() {
     }
     setShowModal(true);
   };
+  
   
   const saveNotes = async () => {
     const token = localStorage.getItem('token');
@@ -230,6 +238,62 @@ function AdvisorDashboard() {
       alert('Server error. Try again later.');
     }
   };
+
+  const handleCoopAction = async (requestId, action, notes = '') => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`http://localhost:5000/api/advisor/coop-review/${requestId}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action, notes }),
+      });
+
+      if (response.ok) {
+        alert('COOP action processed successfully!');
+        setCoopRequests((prev) => prev.filter((req) => req.request_id !== requestId)); // Remove completed request
+      } else {
+        const errorData = await response.json();
+        alert(errorData.msg || 'Failed to process COOP action.');
+      }
+    } catch (err) {
+      alert('Server error while processing COOP action.');
+    }
+  };
+
+  const saveNewNote = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`http://localhost:5000/api/advisor/notes/${selectedRequestId}`, {
+        method: 'POST', // Change to POST for adding a new note
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: newNoteContent,
+          role: 'Advisor', // Adjust as needed
+        }),
+      });
+  
+      if (response.ok) {
+        const newNote = await response.json();
+        setNotes((prevNotes) => [...prevNotes, newNote]); // Append the new note to the existing notes
+        setNewNoteContent(''); // Clear the textarea
+        alert('Note saved successfully!');
+      } else {
+        const errorData = await response.json();
+        console.error('API returned error:', errorData);
+        alert(`Failed to save note. Error: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error saving note:', error);
+      alert('Failed to save note.');
+    }
+  };
+  
   
 
   return (
@@ -284,6 +348,66 @@ function AdvisorDashboard() {
       ) : (
         <p>No requests found</p>
       )}
+
+      {/* COOP Requests */}
+      {coopRequests.length > 0 && (
+        <div className="table-container">
+          <h2>COOP Requests</h2>
+          <table className="dashboard-table">
+            <thead>
+              <tr>
+                <th>Request ID</th>
+                <th>Student Name</th>
+                <th>COOP 1 Completed</th>
+                <th>COOP 2 Completed</th>
+                <th>Notes</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {coopRequests.map((request) => (
+                <tr key={request.request_id}>
+                  <td>{request.request_id}</td>
+                  <td>{`${request.first_name} ${request.last_name}`}</td>
+                  <td>{request.coop1_completed ? 'Yes' : 'No'}</td>
+                  <td>{request.coop2_completed ? 'Yes' : 'No'}</td>
+                  <td>
+                    <textarea
+                      value={coopActions[request.request_id]?.notes || ''}
+                      onChange={(e) =>
+                        setCoopActions((prev) => ({
+                          ...prev,
+                          [request.request_id]: { ...prev[request.request_id], notes: e.target.value },
+                        }))
+                      }
+                      placeholder="Add notes"
+                    />
+                  </td>
+                  <td>
+                    <button
+                      onClick={() =>
+                        handleCoopAction(request.request_id, 'approve', coopActions[request.request_id]?.notes)
+                      }
+                      className="btn btn-success"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() =>
+                        handleCoopAction(request.request_id, 'reject', coopActions[request.request_id]?.notes)
+                      }
+                      className="btn btn-danger"
+                    >
+                      Reject
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      
 
         {/* Approved Requests Table */}
     <h2>Approved Requests</h2>
@@ -367,25 +491,36 @@ function AdvisorDashboard() {
       <p>No rejected requests found</p>
     )}
 
-        {showModal && (
-          <div className="modal">
-            <div className="modal-content">
-              <h2>Edit/View Notes</h2>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows="10"
-                cols="50"
-              />
-              <button onClick={saveNotes} className="btn btn-success">
-                Save
-              </button>
-              <button onClick={() => setShowModal(false)} className="btn btn-secondary">
-                Close
-              </button>
-            </div>
+{showModal && (
+  <div className="modal">
+    <div className="modal-content">
+      <h2>Notes</h2>
+      <div className="notes-list">
+        {notes.map((note) => (
+          <div key={note.note_id} className="note-item">
+            <p><strong>{note.role}:</strong> {note.content}</p>
+            <p><em>{new Date(note.created_at).toLocaleString()}</em></p>
+            <hr />
           </div>
-        )}
+        ))}
+      </div>
+      <h3>Add a New Note</h3>
+      <textarea
+        value={newNoteContent}
+        onChange={(e) => setNewNoteContent(e.target.value)}
+        rows="5"
+        cols="50"
+      />
+      <button onClick={saveNewNote} className="btn btn-success">
+        Save Note
+      </button>
+      <button onClick={() => setShowModal(false)} className="btn btn-secondary">
+        Close
+      </button>
+    </div>
+  </div>
+)}
+
 
       {/* Modal for Viewing Student Details */}
       {showModal && studentDetails && (

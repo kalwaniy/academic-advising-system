@@ -6,6 +6,7 @@ import ExcelJS from 'exceljs';
 import { sendEmail } from '../utils/email.js';
 import logger, { logWithRequestContext } from '../utils/logger.js';
 
+
 export const getAdvisorDashboard = async (req, res) => {
   logWithRequestContext(req, 'info', 'Fetching advisor dashboard...');
   try {
@@ -209,16 +210,16 @@ export const getNotesByRequestId = async (req, res) => {
     const { requestId } = req.params;
 
     const query = `
-      SELECT note_id, note_text AS content, created_at
+      SELECT 
+        note_id, 
+        note_text AS content, 
+        created_at, 
+        role,
+        user_id
       FROM request_notes
       WHERE request_id = ?;
     `;
     const [notes] = await db.query(query, [requestId]);
-
-    if (notes.length === 0) {
-      // Return an empty note object instead of 404
-      return res.status(200).json([{ content: '' }]);
-    }
 
     res.status(200).json(notes);
   } catch (error) {
@@ -226,6 +227,39 @@ export const getNotesByRequestId = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+
+export const addNote = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { content, role } = req.body;
+    const userId = req.user_id; // Extracted from middleware
+
+    if (!content) {
+      return res.status(400).json({ error: 'Note content is required' });
+    }
+
+    const query = `
+      INSERT INTO request_notes (request_id, user_id, role, note_text, created_at)
+      VALUES (?, ?, ?, ?, NOW());
+    `;
+
+    const [result] = await db.query(query, [requestId, userId, role || 'Advisor', content]);
+
+    // Fetch the newly added note to return it
+    const [newNoteRows] = await db.query(
+      'SELECT note_id, note_text AS content, created_at, role, user_id FROM request_notes WHERE note_id = ?',
+      [result.insertId]
+    );
+
+    res.status(200).json(newNoteRows[0]);
+  } catch (error) {
+    console.error('Error adding note:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+
 
 
 
@@ -442,4 +476,40 @@ export const sendToDeptChair = async (req, res) => {
 };
 
 
+
+
+export const getCompletedCoopReviews = async (req, res) => {
+  const advisorId = req.user_id; // Assuming middleware sets this
+  try {
+    const query = `
+      SELECT 
+        pw.request_id,
+        pw.course_code,
+        pw.course_title,
+        pw.term_requested,
+        pw.status,
+        s.first_name,
+        s.last_name,
+        cv.comments,
+        cv.verified_at
+      FROM prerequisite_waivers pw
+      JOIN students s ON pw.submitted_by = s.university_id
+      JOIN coop_verification cv ON pw.request_id = cv.waiver_id
+      WHERE pw.status = 'COOP Review Complete'
+      AND EXISTS (
+        SELECT 1 
+        FROM advisor_student_relation ar
+        WHERE ar.advisor_id = ? 
+        AND ar.student_id = pw.submitted_by
+      )
+      ORDER BY cv.verified_at DESC;
+    `;
+    const [completedRequests] = await db.query(query, [advisorId]);
+
+    res.status(200).json({ success: true, data: completedRequests });
+  } catch (err) {
+    console.error('Error fetching completed COOP reviews:', err);
+    res.status(500).json({ success: false, msg: 'Server error' });
+  }
+};
 
