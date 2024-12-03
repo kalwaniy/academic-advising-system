@@ -15,10 +15,10 @@ function AdvisorDashboard() {
   const [coopActions, setCoopActions] = useState({}); // State for COOP actions
   const [notes, setNotes] = useState([]); // Change from '' to []
   const [newNoteContent, setNewNoteContent] = useState('');
+  const [filterStatus, setFilterStatus] = useState('All'); // New state for filter
+  const [searchTerm, setSearchTerm] = useState('');
+
   
-
-
-
   useEffect(() => {
     const fetchRequests = async () => {
         const token = localStorage.getItem('token');
@@ -294,13 +294,66 @@ function AdvisorDashboard() {
     }
   };
   
-  
+  // New function to handle filter changes
+  const handleFilterChange = (status) => {
+    setFilterStatus(status);
+  };
 
+  // Filtered requests based on selected status
+  const filteredRequests = requests.filter((request) => {
+    if (filterStatus === 'All') return true;
+    if (filterStatus === 'COOP') return request.coop_request === 1 && request.status === 'Pending with COOP';
+    return request.status === filterStatus;
+  })
+
+  .filter((request) => {
+    // Apply search filter
+    const studentName = `${request.first_name} ${request.last_name}`.toLowerCase();
+    const courseCode = request.course_code.toLowerCase();
+    const courseTitle = request.course_title.toLowerCase();
+    const search = searchTerm.toLowerCase();
+    return (
+      studentName.includes(search) ||
+      courseCode.includes(search) ||
+      courseTitle.includes(search)
+    );
+  });
+
+  // Function to determine if actions should be shown based on request status
+  const shouldShowActions = (request) => {
+    // Adjust this logic based on your requirements
+    return request.status === 'Pending' || request.status === 'In-Review' || request.status === 'Pending with COOP';
+  };
+  
   return (
-    <div className="advisor-dashboard">
-      <h1 className="dashboard-title">Pre-requisite Waiver Requests</h1>
+  <div className="advisor-dashboard">
+      <h1 className="dashboard-title">Prerequisite Waiver Requests</h1>
       {error && <p className="error">{error}</p>}
-      {requests.length > 0 ? (
+
+      {/* Filter Controls */}
+      <div className="filter-controls">
+        <label>Filter by Status: </label>
+        <select value={filterStatus} onChange={(e) => handleFilterChange(e.target.value)}>
+          <option value="All">All</option>
+          <option value="Pending">Pending</option>
+          <option value="In-Review">In-Review</option>
+          <option value="Approved">Approved</option>
+          <option value="Rejected">Rejected</option>
+          <option value="Pending with COOP">Pending with COOP</option>
+          <option value="COOP">COOP Requests</option>
+        </select>
+      </div>
+      <div className="search-container">
+  <input
+    type="text"
+    placeholder="Search by student name, course code, or course title"
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+  />
+</div>
+
+      {/* Display Filtered Requests */}
+      {filteredRequests.length > 0 ? (
         <div className="table-container">
           <table className="dashboard-table">
             <thead>
@@ -313,12 +366,12 @@ function AdvisorDashboard() {
                 <th>Term Requested</th>
                 <th>Student Name</th>
                 <th>Status</th>
-                <th>Processed Automatically</th> {/* Add this column */}
+                <th>Auto Processed</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {requests.map((request) => (
+              {filteredRequests.map((request) => (
                 <tr key={request.request_id}>
                   <td>{request.request_id}</td>
                   <td>{request.course_code}</td>
@@ -328,17 +381,18 @@ function AdvisorDashboard() {
                   <td>{request.term_requested}</td>
                   <td>{`${request.first_name} ${request.last_name}`}</td>
                   <td>{request.status}</td>
-                  <td>{request.auto_status || 'No'}</td> {/* Display auto status */}
+                  <td>{request.auto_processed ? 'Yes' : 'No'}</td>
                   <td>
                     <button onClick={() => fetchStudentDetails(request.submitted_by)}>View Details</button>
-                    <button onClick={() => handleEditRequest(request)}>Edit</button>
-                    <button onClick={() => handleSendToDeptChair(request.request_id)}>Send to Dept Chair</button>
-                    <button 
-                            onClick={() => openNotesModal(request.request_id)} 
-                            className="btn btn-primary"
-                            >
-                            Edit/View Notes
-                    </button>
+                    { (
+                      <>
+                        <button onClick={() => handleEditRequest(request)}>Edit</button>
+                        {request.status === 'Pending' && (
+                          <button onClick={() => handleSendToDeptChair(request.request_id)}>Send to Dept Chair</button>
+                        )}
+                      </>
+                    )}
+                    <button onClick={() => openNotesModal(request.request_id)}>Edit/View Notes</button>
                   </td>
                 </tr>
               ))}
@@ -346,241 +400,116 @@ function AdvisorDashboard() {
           </table>
         </div>
       ) : (
-        <p>No requests found</p>
+        <p>No requests found for the selected filter.</p>
       )}
 
-      {/* COOP Requests */}
-      {coopRequests.length > 0 && (
-        <div className="table-container">
-          <h2>COOP Requests</h2>
-          <table className="dashboard-table">
-            <thead>
-              <tr>
-                <th>Request ID</th>
-                <th>Student Name</th>
-                <th>COOP 1 Completed</th>
-                <th>COOP 2 Completed</th>
-                <th>Notes</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {coopRequests.map((request) => (
-                <tr key={request.request_id}>
-                  <td>{request.request_id}</td>
-                  <td>{`${request.first_name} ${request.last_name}`}</td>
-                  <td>{request.coop1_completed ? 'Yes' : 'No'}</td>
-                  <td>{request.coop2_completed ? 'Yes' : 'No'}</td>
-                  <td>
-                    <textarea
-                      value={coopActions[request.request_id]?.notes || ''}
-                      onChange={(e) =>
-                        setCoopActions((prev) => ({
-                          ...prev,
-                          [request.request_id]: { ...prev[request.request_id], notes: e.target.value },
-                        }))
-                      }
-                      placeholder="Add notes"
-                    />
-                  </td>
-                  <td>
-                    <button
-                      onClick={() =>
-                        handleCoopAction(request.request_id, 'approve', coopActions[request.request_id]?.notes)
-                      }
-                      className="btn btn-success"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() =>
-                        handleCoopAction(request.request_id, 'reject', coopActions[request.request_id]?.notes)
-                      }
-                      className="btn btn-danger"
-                    >
-                      Reject
-                    </button>
-                  </td>
-                </tr>
+      {/* Notes Modal */}
+      {showModal && selectedRequestId && (
+        <div className="modal">
+          <div className="modal-content">
+            <h2>Notes</h2>
+            <div className="notes-list">
+              {notes.map((note) => (
+                <div key={note.note_id} className="note-item">
+                  <p>
+                    <strong>{note.role}:</strong> {note.note_text}
+                  </p>
+                  <p>
+                    <em>{new Date(note.created_at).toLocaleString()}</em>
+                  </p>
+                  <hr />
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+            <h3>Add a New Note</h3>
+            <textarea
+              value={newNoteContent}
+              onChange={(e) => setNewNoteContent(e.target.value)}
+              rows="5"
+              cols="50"
+            />
+            <button onClick={saveNewNote} className="btn btn-success">
+              Save Note
+            </button>
+            <button onClick={() => setShowModal(false)} className="btn btn-secondary">
+              Close
+            </button>
+          </div>
         </div>
       )}
-      
 
-        {/* Approved Requests Table */}
-    <h2>Approved Requests</h2>
-    {requests.filter(request => request.status === 'Approved').length > 0 ? (
-      <div className="table-container">
-        <table className="dashboard-table">
-          <thead>
-            <tr>
-              <th>Request ID</th>
-              <th>Course Code</th>
-              <th>Course Title</th>
-              <th>Reason</th>
-              <th>Justification</th>
-              <th>Term Requested</th>
-              <th>Student Name</th>
-              <th>Status</th>
-              <th>Processed Automatically</th>
-            </tr>
-          </thead>
-          <tbody>
-            {requests
-              .filter(request => request.status === 'Approved')
-              .map(request => (
-                <tr key={request.request_id}>
-                  <td>{request.request_id}</td>
-                  <td>{request.course_code}</td>
-                  <td>{request.course_title}</td>
-                  <td>{request.reason_to_take}</td>
-                  <td>{request.justification}</td>
-                  <td>{request.term_requested}</td>
-                  <td>{`${request.first_name} ${request.last_name}`}</td>
-                  <td>{request.status}</td>
-                  <td>{request.auto_status || 'No'}</td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
-    ) : (
-      <p>No approved requests found</p>
-    )}
-
-    {/* Rejected Requests Table */}
-    <h2>Rejected Requests</h2>
-    {requests.filter(request => request.status === 'Rejected').length > 0 ? (
-      <div className="table-container">
-        <table className="dashboard-table">
-          <thead>
-            <tr>
-              <th>Request ID</th>
-              <th>Course Code</th>
-              <th>Course Title</th>
-              <th>Reason</th>
-              <th>Justification</th>
-              <th>Term Requested</th>
-              <th>Student Name</th>
-              <th>Status</th>
-              <th>Processed Automatically</th>
-            </tr>
-          </thead>
-          <tbody>
-            {requests
-              .filter(request => request.status === 'Rejected')
-              .map(request => (
-                <tr key={request.request_id}>
-                  <td>{request.request_id}</td>
-                  <td>{request.course_code}</td>
-                  <td>{request.course_title}</td>
-                  <td>{request.reason_to_take}</td>
-                  <td>{request.justification}</td>
-                  <td>{request.term_requested}</td>
-                  <td>{`${request.first_name} ${request.last_name}`}</td>
-                  <td>{request.status}</td>
-                  <td>{request.auto_status || 'No'}</td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
-    ) : (
-      <p>No rejected requests found</p>
-    )}
-
-{showModal && (
-  <div className="modal">
-    <div className="modal-content">
-      <h2>Notes</h2>
-      <div className="notes-list">
-        {notes.map((note) => (
-          <div key={note.note_id} className="note-item">
-            <p><strong>{note.role}:</strong> {note.content}</p>
-            <p><em>{new Date(note.created_at).toLocaleString()}</em></p>
-            <hr />
-          </div>
-        ))}
-      </div>
-      <h3>Add a New Note</h3>
-      <textarea
-        value={newNoteContent}
-        onChange={(e) => setNewNoteContent(e.target.value)}
-        rows="5"
-        cols="50"
-      />
-      <button onClick={saveNewNote} className="btn btn-success">
-        Save Note
-      </button>
-      <button onClick={() => setShowModal(false)} className="btn btn-secondary">
-        Close
-      </button>
-    </div>
-  </div>
-)}
-
-
-      {/* Modal for Viewing Student Details */}
+      {/* Student Details Modal */}
       {showModal && studentDetails && (
-  <div className="modal-overlay">
-    <div className="modal-content">
-      <h2>Student Details</h2>
-      <p><strong>Name:</strong> {`${studentDetails.first_name} ${studentDetails.last_name}`}</p>
-      <p><strong>Email:</strong> {studentDetails.email_id}</p>
-      <p><strong>CGPA:</strong> {studentDetails.cgpa}</p>
-      <p><strong>Program:</strong> {studentDetails.program}</p>
-      <p><strong>Year Level:</strong> {studentDetails.year_level}</p>
-      <p><strong>Term Enrolled:</strong> {studentDetails.year_enrolled}</p>
-      <p><strong>Current Term:</strong> {studentDetails.current_term}</p>
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Student Details</h2>
+            <p>
+              <strong>Name:</strong> {`${studentDetails.first_name} ${studentDetails.last_name}`}
+            </p>
+            <p>
+              <strong>Email:</strong> {studentDetails.email_id}
+            </p>
+            <p>
+              <strong>CGPA:</strong> {studentDetails.cgpa}
+            </p>
+            <p>
+              <strong>Program:</strong> {studentDetails.program}
+            </p>
+            <p>
+              <strong>Year Level:</strong> {studentDetails.year_level}
+            </p>
+            <p>
+              <strong>Term Enrolled:</strong> {studentDetails.year_enrolled}
+            </p>
+            <p>
+              <strong>Current Term:</strong> {studentDetails.current_term}
+            </p>
 
-      <h3>Pre-requisites for Requested Course</h3>
-      <table className="prerequisites-table">
-        <thead>
-          <tr>
-            <th>Course Code</th>
-            <th>Course Title</th>
-          </tr>
-        </thead>
-        <tbody>
-          {studentDetails.prerequisites.map((prerequisite) => (
-            <tr key={prerequisite.prerequisite_course_code}>
-              <td>{prerequisite.prerequisite_course_code}</td>
-              <td>{prerequisite.prerequisite_title}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+            <h3>Prerequisites for Requested Course</h3>
+            <table className="prerequisites-table">
+              <thead>
+                <tr>
+                  <th>Course Code</th>
+                  <th>Course Title</th>
+                </tr>
+              </thead>
+              <tbody>
+                {studentDetails.prerequisites.map((prerequisite) => (
+                  <tr key={prerequisite.prerequisite_course_code}>
+                    <td>{prerequisite.prerequisite_course_code}</td>
+                    <td>{prerequisite.prerequisite_title}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
-      <h3>Course Log</h3>
-      <table className="course-log-table">
-        <thead>
-          <tr>
-            <th>Course Code</th>
-            <th>Course Title</th>
-            <th>Term Taken</th>
-            <th>Grade</th>
-          </tr>
-        </thead>
-        <tbody>
-          {studentDetails.courseLog.map((course) => (
-            <tr key={course.course_code}>
-              <td>{course.course_code}</td>
-              <td>{course.course_title}</td>
-              <td>{course.term_taken}</td>
-              <td>{course.grade}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <button onClick={closeModal}>Close</button>
-    </div>
-  </div>
-)}
+            <h3>Course Log</h3>
+            <table className="course-log-table">
+              <thead>
+                <tr>
+                  <th>Course Code</th>
+                  <th>Course Title</th>
+                  <th>Term Taken</th>
+                  <th>Grade</th>
+                </tr>
+              </thead>
+              <tbody>
+                {studentDetails.courseLog.map((course) => (
+                  <tr key={course.course_code}>
+                    <td>{course.course_code}</td>
+                    <td>{course.course_title}</td>
+                    <td>{course.term_taken}</td>
+                    <td>{course.grade}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <button onClick={closeModal}>Close</button>
+          </div>
+        </div>
+      )}
 
-
-      {/* Modal for Editing Request */}
+      {/* Edit Request Modal */}
       {editModalVisible && currentRequest && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -592,7 +521,9 @@ function AdvisorDashboard() {
                   value={currentRequest.course_code}
                   onChange={(e) => handleCourseCodeChange(e.target.value)}
                 >
-                  <option value="" disabled>Select a course code</option>
+                  <option value="" disabled>
+                    Select a course code
+                  </option>
                   {courseData.map((course) => (
                     <option key={course.course_code} value={course.course_code}>
                       {course.course_code}
@@ -606,7 +537,9 @@ function AdvisorDashboard() {
                   value={currentRequest.course_title}
                   onChange={(e) => handleCourseTitleChange(e.target.value)}
                 >
-                  <option value="" disabled>Select a course title</option>
+                  <option value="" disabled>
+                    Select a course title
+                  </option>
                   {courseData.map((course) => (
                     <option key={course.course_title} value={course.course_title}>
                       {course.course_title}
@@ -651,8 +584,10 @@ function AdvisorDashboard() {
                   }
                 >
                   <option value="Pending">Pending</option>
+                  <option value="In-Review">In-Review</option>
                   <option value="Approved">Approved</option>
                   <option value="Rejected">Rejected</option>
+                  <option value="Pending with COOP">Pending with COOP</option>
                 </select>
               </label>
             </form>

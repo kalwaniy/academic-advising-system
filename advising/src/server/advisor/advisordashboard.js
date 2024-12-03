@@ -4,6 +4,10 @@ import db from '../db/db.js';
 import jwt from 'jsonwebtoken';
 import ExcelJS from 'exceljs';
 import { sendEmail } from '../utils/email.js';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { processStudentInfoCSV, processStudentCoursesCSV } from './csvProcessor.js';
 import logger, { logWithRequestContext } from '../utils/logger.js';
 
 
@@ -512,4 +516,65 @@ export const getCompletedCoopReviews = async (req, res) => {
     res.status(500).json({ success: false, msg: 'Server error' });
   }
 };
+
+const upload = multer({
+  dest: 'uploads/', // Ensure this directory exists and is writable
+  limits: { fileSize: 10 * 1024 * 1024 }, // Limit file size to 10MB
+  fileFilter: function (req, file, cb) {
+    // Accept only CSV files
+    const filetypes = /csv/;
+    const mimetype = filetypes.test(file.mimetype);
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error('File upload only supports CSV files'));
+  },
+});
+
+// Controller function to handle CSV upload
+export const uploadCsvFiles = async (req, res) => {
+  logWithRequestContext(req, 'info', 'Uploading CSV files...');
+  try {
+    // Use multer to handle the file upload
+    upload.fields([
+      { name: 'studentInfoFile', maxCount: 1 },
+      { name: 'studentCoursesFile', maxCount: 1 },
+    ])(req, res, async (err) => {
+      if (err) {
+        logWithRequestContext(req, 'error', `Multer error: ${err.message}`);
+        return res.status(400).json({ error: err.message });
+      }
+      if (!req.files || !req.files['studentInfoFile'] || !req.files['studentCoursesFile']) {
+        logWithRequestContext(req, 'warn', 'Both CSV files are required');
+        return res.status(400).json({ error: 'Please upload both CSV files.' });
+      }
+
+      const studentInfoPath = req.files['studentInfoFile'][0].path;
+      const studentCoursesPath = req.files['studentCoursesFile'][0].path;
+
+      try {
+        // Process the CSV files
+        await processStudentInfoCSV(studentInfoPath);
+        await processStudentCoursesCSV(studentCoursesPath);
+
+        // Optionally delete the uploaded files
+        fs.unlinkSync(studentInfoPath);
+        fs.unlinkSync(studentCoursesPath);
+
+        logWithRequestContext(req, 'info', 'CSV files processed successfully');
+        res.status(200).json({ message: 'CSV files have been processed successfully.' });
+      } catch (processingError) {
+        logWithRequestContext(req, 'error', `Error processing CSV files: ${processingError.message}`);
+        res.status(500).json({ error: 'An error occurred during CSV processing.' });
+      }
+    });
+  } catch (error) {
+    logWithRequestContext(req, 'error', `Error in uploadCsvFiles: ${error.message}`);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+
+
 

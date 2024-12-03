@@ -16,6 +16,7 @@ import FacultyLanding from './facultyLanding';
 import FacultyDashboard from './facultyDashboard';
 import DeptChairLog from './deptchairlog';
 import CoordinatorDashboard from './coordinatordash';
+import Advisorcsv from './advisorcsv'
 
 // ProtectedRoute component to enforce role-based access control
 function ProtectedRoute({ element: Component, roleRequired }) {
@@ -61,7 +62,11 @@ function App() {
       />
       <Route
         path="/reports"
-        element={<ProtectedRoute element={<Reports />} roleRequired="advisor" />} // New Reports Route
+        element={<ProtectedRoute element={<Reports />} roleRequired="advisor" />} 
+      />
+      <Route
+        path="/advisor-csv"
+        element={<ProtectedRoute element={<Advisorcsv />} roleRequired="advisor" />}
       />
 
       {/* Department Chair Routes */}

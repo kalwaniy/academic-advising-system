@@ -12,7 +12,8 @@ import {
   sendToDeptChair,
   downloadExcelReport,
   getCompletedCoopReviews,
-  addNote
+  addNote,
+  uploadCsvFiles
 } from '../advisor/advisordashboard.js'; // Import from the advisor folder
 import { verifyToken } from '../middleware/auth.js';
 
@@ -46,6 +47,8 @@ router.get('/completed-coop-reviews', verifyToken, getCompletedCoopReviews);
 router.put('/send-to-dept-chair/:requestId', verifyToken, sendToDeptChair);
 
 router.post('/notes/:requestId', verifyToken, addNote);
+
+router.post('/upload-csv', verifyToken, uploadCsvFiles);
 
 export default router;
 
