@@ -1,31 +1,34 @@
-  /* eslint-disable no-undef */
-  import 'dotenv/config';
-  import express from 'express';
-  import bodyParser from 'body-parser';
-  import cors from 'cors';
+/* eslint-disable no-undef */
+import 'dotenv/config';
+import express from 'express';
+import bodyParser from 'body-parser';
+import cors from 'cors';
 
-  import globalRoutes from './routes/globalRoutes.js';
-  import studentroutes from './routes/studentroutes.js'; 
-  import advisorRoutes from './routes/advisorRoutes.js';
-  import departmentChairRoutes from './routes/departmentChairRoutes.js';
-  import facultyRoutes from './routes/facultyRoutes.js';
-  import coordinatorRoutes from './routes/coordinatorRoutes.js'
-  import { verifyToken } from './middleware/auth.js';
+import globalRoutes from './routes/globalRoutes.js';
+import studentroutes from './routes/studentroutes.js'; 
+import advisorRoutes from './routes/advisorRoutes.js';
+import departmentChairRoutes from './routes/departmentChairRoutes.js';
+import facultyRoutes from './routes/facultyRoutes.js';
+import coordinatorRoutes from './routes/coordinatorRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js'
 
-  const app = express();
-  const PORT = process.env.PORT || 5000;
+const app = express();
 
-  app.use(bodyParser.json());
-  app.use(cors());
+const PORT = process.env.PORT || 5000;
 
-  app.use('/api', globalRoutes);
-  app.use('/api', studentroutes); // Use student routes
-  app.use('/api/advisor', advisorRoutes);
-  app.use('/api/department-chair', departmentChairRoutes);
-  app.use('/api/faculty', facultyRoutes);
-  app.use('/api/coordinator', coordinatorRoutes)
+app.use(bodyParser.json());
+app.use(cors());
 
+// Routes
+app.use('/api', globalRoutes);
+app.use('/api', studentroutes);
+app.use('/api/advisor', advisorRoutes);
+app.use('/api/department-chair', departmentChairRoutes);
+app.use('/api/faculty', facultyRoutes);
+app.use('/api/coordinator', coordinatorRoutes);
+app.use('/api', notificationRoutes);
 
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

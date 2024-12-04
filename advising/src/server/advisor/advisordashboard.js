@@ -10,7 +10,6 @@ import fs from 'fs';
 import { processStudentInfoCSV, processStudentCoursesCSV } from './csvProcessor.js';
 import logger, { logWithRequestContext } from '../utils/logger.js';
 
-
 export const getAdvisorDashboard = async (req, res) => {
   logWithRequestContext(req, 'info', 'Fetching advisor dashboard...');
   try {
@@ -415,19 +414,20 @@ export const downloadExcelReport = async (req, res) => {
 
 
 
+
 export const sendToDeptChair = async (req, res) => {
   const { requestId } = req.params;
   const { status } = req.body;
 
   try {
-    // Ensure the request ID and status are valid
+    // Validate input
     if (!requestId || !status) {
       return res.status(400).json({ msg: 'Invalid data provided' });
     }
 
-    // Step 1: Fetch the department chair's details
+    // Step 1: Fetch department chair's details
     const deptChairQuery = `
-      SELECT email_id, first_name, last_name 
+      SELECT university_id, email_id, first_name, last_name 
       FROM department_chairs 
       LIMIT 1;
     `;
@@ -438,7 +438,7 @@ export const sendToDeptChair = async (req, res) => {
       return res.status(404).json({ msg: 'Department Chair not found.' });
     }
 
-    const { email_id: deptChairEmail, first_name: firstName, last_name: lastName } = deptChairRows[0];
+    const { university_id: deptChairId, email_id: deptChairEmail, first_name: firstName, last_name: lastName } = deptChairRows[0];
 
     // Step 2: Update the status of the waiver request
     const updateQuery = `
@@ -449,10 +449,19 @@ export const sendToDeptChair = async (req, res) => {
     const [updateResult] = await db.query(updateQuery, [status, requestId]);
 
     if (updateResult.affectedRows === 0) {
+      console.warn(`Request with ID ${requestId} not found or already updated.`);
       return res.status(404).json({ msg: 'Request not found.' });
     }
 
-    // Step 3: Send an email notification to the department chair
+    // Step 3: Insert notification for department chair
+    const notificationQuery = `
+      INSERT INTO notifications (user_id, message) 
+      VALUES (?, ?);
+    `;
+    const notificationMessage = `Advisor has sent a new waiver request (Request ID: ${requestId}) for review.`;
+    await db.query(notificationQuery, [deptChairId, notificationMessage]);
+
+    // Step 4: Send an email notification to the department chair
     const emailSubject = `New Waiver Request Needs Review (Request ID: ${requestId})`;
     const emailBody = `
       Dear ${firstName} ${lastName},
@@ -472,13 +481,15 @@ export const sendToDeptChair = async (req, res) => {
     await sendEmail(deptChairEmail, emailSubject, emailBody);
     console.log(`Email sent to department chair (${deptChairEmail}).`);
 
-    res.status(200).json({ msg: 'Request status updated and email sent to department chair.' });
+    // Respond with success
+    res.status(200).json({
+      msg: 'Request status updated, notification added, and email sent to department chair.',
+    });
   } catch (err) {
-    console.error('Error updating request status or sending email:', err);
-    res.status(500).json({ msg: 'Server error' });
+    console.error('Error updating request status or sending notification/email:', err);
+    res.status(500).json({ msg: 'Server error while processing the request.' });
   }
 };
-
 
 
 

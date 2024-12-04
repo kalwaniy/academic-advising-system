@@ -1,6 +1,5 @@
 import db from '../db/db.js';
 
-
 export const getDepartmentChairUserInfo = async (req, res) => {
   try {
     // Extract user_id from the token via middleware

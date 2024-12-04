@@ -99,56 +99,69 @@ export const completeReview = async (req, res) => {
   const { requestId } = req.params;
 
   try {
+    // Step 1: Fetch department chair details
     const deptChairQuery = `
-      SELECT dc.email_id, dc.first_name, dc.last_name
-      FROM department_chairs AS dc
-      JOIN faculty AS f ON dc.department = f.department
-      JOIN prerequisite_waivers AS pw ON pw.faculty_id = f.university_id
-      WHERE pw.request_id = ? AND pw.status = 'In Review with Faculty'
+      SELECT university_id, email_id, first_name, last_name
+      FROM department_chairs
+      WHERE department = (
+        SELECT department FROM faculty WHERE university_id = (
+          SELECT faculty_id FROM prerequisite_waivers WHERE request_id = ?
+        )
+      )
       LIMIT 1;
     `;
     const [deptChairResult] = await db.query(deptChairQuery, [requestId]);
 
     if (!deptChairResult || deptChairResult.length === 0) {
-      logWithRequestContext(req, 'warn', `No department chair email found for Request ID: ${requestId}.`);
-      return res.status(404).json({ msg: "No department chair email found for the faculty's department." });
+      logWithRequestContext(req, 'warn', `No department chair found for Request ID: ${requestId}.`);
+      return res.status(404).json({ msg: "No department chair found for the faculty's department." });
     }
 
-    const { email_id: deptChairEmail, first_name: firstName, last_name: lastName } = deptChairResult[0];
+    const { university_id: deptChairUniversityId, email_id: deptChairEmail, first_name: firstName, last_name: lastName } = deptChairResult[0];
 
+    // Step 2: Update the request status
     const updateQuery = `
       UPDATE prerequisite_waivers
       SET status = 'Completed by Faculty'
-      WHERE request_id = ? AND status = 'In Review with Faculty';
+      WHERE request_id = ? AND status = 'In Review with Facul';
     `;
     const [updateResult] = await db.query(updateQuery, [requestId]);
 
     if (updateResult.affectedRows === 0) {
       logWithRequestContext(req, 'warn', `Request with ID: ${requestId} not found or already updated.`);
-      return res.status(404).json({ msg: "Request not found or already updated." });
+      return res.status(404).json({ msg: 'Request not found or already updated.' });
     }
 
-    const subject = "Review Completion Notification";
-    const text = `
+    // Step 3: Insert notification for department chair
+    const notificationQuery = `
+      INSERT INTO notifications (user_id, message)
+      VALUES (?, ?);
+    `;
+    const notificationMessage = `Faculty has completed the review for waiver request (Request ID: ${requestId}).`;
+    await db.query(notificationQuery, [deptChairUniversityId, notificationMessage]);
+
+    // Step 4: Send an email notification to the department chair
+    const emailSubject = `Review Completion Notification (Request ID: ${requestId})`;
+    const emailBody = `
       Dear ${firstName} ${lastName},
 
-      The review for request ID ${requestId} has been completed.
+      The review for request ID ${requestId} has been completed by the assigned faculty.
+
+      Please log in to the system to review the details and take further action if required.
 
       Best regards,
-      Your System
+      University Waiver System
     `;
 
-    sendEmail(deptChairEmail, subject, text)
-      .then(() => {
-        logWithRequestContext(req, 'info', `Review completed and email sent successfully for Request ID: ${requestId}.`);
-        res.status(200).json({ msg: "Review completed and email sent." });
-      })
-      .catch((error) => {
-        logWithRequestContext(req, 'error', `Review completed but email notification failed for Request ID: ${requestId} - ${error.message}`, { stack: error.stack });
-        res.status(500).json({ msg: "Review completed, but email notification failed." });
-      });
+    await sendEmail(deptChairEmail, emailSubject, emailBody);
+    logWithRequestContext(req, 'info', `Review completed and email sent successfully for Request ID: ${requestId}.`);
+
+    // Step 5: Respond with success
+    res.status(200).json({
+      msg: 'Review completed successfully, notification sent, and email sent to department chair.',
+    });
   } catch (err) {
     logWithRequestContext(req, 'error', `Error completing review for Request ID: ${requestId} - ${err.message}`, { stack: err.stack });
-    res.status(500).json({ error: "Server error while completing review." });
+    res.status(500).json({ error: 'Server error while completing review.' });
   }
 };
