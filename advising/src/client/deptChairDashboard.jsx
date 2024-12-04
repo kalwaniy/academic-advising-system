@@ -18,6 +18,8 @@ function DeptChairDashboard() {
   const [selectedFaculty, setSelectedFaculty] = useState('');
   const [facultyNotes, setFacultyNotes] = useState([]); // NEW: To store faculty notes
   const [deptChairNotes, setDeptChairNotes] = useState([]); // NEW: To store department chair notes
+  const [facultyMapping, setFacultyMapping] = useState({});
+
 
 
   useEffect(() => {
@@ -35,10 +37,9 @@ function DeptChairDashboard() {
   
         if (response.ok) {
           const data = await response.json();
-          setRequests(data.requests.filter((req) => req.status === 'In-Review')); // Filter for "In-Review"
-          setCompletedRequests(data.completedRequests); // Set completed requests
-          console.log('Completed Requests:', data.completedRequests); // Debug log
-          setFacultyMembers(data.facultyMembers);
+          setRequests(data.requests.filter((req) => req.status === 'In-Review'));
+          setCompletedRequests(data.completedRequests);
+          setFacultyMapping(data.facultyMapping || {}); // Set facultyMapping or default to an empty object
         } else {
           const errorData = await response.json();
           setError(errorData.msg || 'Failed to fetch requests.');
@@ -50,6 +51,7 @@ function DeptChairDashboard() {
   
     fetchRequests();
   }, []);
+  
   
 
   const fetchStudentDetails = async (studentId, requestId) => {
@@ -299,19 +301,21 @@ function DeptChairDashboard() {
                       View Details
                     </button>
                     <select
-                      onChange={(e) => setSelectedFaculty(e.target.value)}
-                      defaultValue=""
-                      className="faculty-select"
-                    >
-                      <option value="" disabled>
-                        Select Faculty
-                      </option>
-                      {facultyMembers.map((faculty) => (
-                        <option key={faculty.user_id} value={faculty.user_id}>
-                          {faculty.username}
-                        </option>
-                      ))}
-                    </select>
+  onChange={(e) => setSelectedFaculty(e.target.value)}
+  defaultValue=""
+  className="faculty-select"
+>
+  <option value="" disabled>
+    Select Faculty
+  </option>
+  {(facultyMapping[request.request_id] || []).map((faculty) => (
+    <option key={faculty.university_id} value={faculty.university_id}>
+      {`${faculty.first_name} ${faculty.last_name}`}
+    </option>
+  ))}
+</select>
+
+
                     <button
                       onClick={() => sendToFaculty(request.request_id, selectedFaculty)}
                       className="btn btn-secondary"

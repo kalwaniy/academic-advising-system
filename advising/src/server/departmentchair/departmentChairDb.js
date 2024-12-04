@@ -8,8 +8,8 @@ import { logWithRequestContext } from '../utils/logger.js';
 
 export const getDeptChairDashboard = async (req, res) => {
   try {
-      logWithRequestContext(req, 'info', 'Fetching Dept Chair Dashboard');
-      
+    logWithRequestContext(req, 'info', 'Fetching Dept Chair Dashboard');
+    
     // Fetch "In-Review" requests
     const inReviewQuery = `
       SELECT 
@@ -22,7 +22,19 @@ export const getDeptChairDashboard = async (req, res) => {
     `;
     const [inReviewRequests] = await db.query(inReviewQuery);
 
-    console.log('Fetched In-Review Requests:', inReviewRequests); // Debug log
+    // Fetch faculty members for each course
+    const facultyMapping = {};
+    for (const request of inReviewRequests) {
+      const courseCode = request.course_code;
+      const facultyQuery = `
+        SELECT f.university_id, f.first_name, f.last_name, f.email_id
+        FROM faculty_courses AS fc
+        JOIN faculty AS f ON fc.faculty_id = f.university_id
+        WHERE fc.course_code = ?;
+      `;
+      const [facultyRows] = await db.query(facultyQuery, [courseCode]);
+      facultyMapping[request.request_id] = facultyRows; // Map faculty by request_id
+    }
 
     // Fetch "Completed by Faculty" requests
     const completedQuery = `
@@ -36,17 +48,10 @@ export const getDeptChairDashboard = async (req, res) => {
     `;
     const [completedRequests] = await db.query(completedQuery);
 
-    console.log('Fetched Completed Requests:', completedRequests); // Debug log
-
-    // Fetch faculty members
-    const facultyQuery = `SELECT user_id, username FROM users WHERE role = 'faculty';`;
-    const [facultyMembers] = await db.query(facultyQuery);
-
-    // Return data for both request categories
     res.status(200).json({
       requests: inReviewRequests,
       completedRequests: completedRequests,
-      facultyMembers,
+      facultyMapping, // Send faculty mapping
     });
   } catch (err) {
     console.error('Error fetching Dept Chair Dashboard:', err);
