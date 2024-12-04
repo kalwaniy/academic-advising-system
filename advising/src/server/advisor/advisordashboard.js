@@ -222,14 +222,20 @@ export const getNotesByRequestId = async (req, res) => {
       FROM request_notes
       WHERE request_id = ?;
     `;
+
     const [notes] = await db.query(query, [requestId]);
 
-    res.status(200).json(notes);
+    if (!notes.length) {
+      return res.status(404).json({ msg: 'No notes found for this request' });
+    }
+
+    res.status(200).json({ success: true, notes });
   } catch (error) {
     console.error('Error fetching notes:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
+
 
 
 export const addNote = async (req, res) => {

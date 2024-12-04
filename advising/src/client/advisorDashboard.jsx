@@ -165,13 +165,13 @@ function AdvisorDashboard() {
       const response = await fetch(`http://localhost:5000/api/advisor/notes/${requestId}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
         },
       });
   
       if (response.ok) {
-        const notesData = await response.json();
-        setNotes(notesData); // Set the array of notes
+        const data = await response.json();
+        console.log('Fetched notes:', data); // Debugging step
+        setNotes(data.notes || []); // Ensure that "notes" are correctly set
       } else {
         setNotes([]);
         console.error('API returned error:', await response.text());
@@ -181,6 +181,8 @@ function AdvisorDashboard() {
     }
     setShowModal(true);
   };
+  
+  
   
   
   const saveNotes = async () => {
@@ -267,21 +269,21 @@ function AdvisorDashboard() {
     const token = localStorage.getItem('token');
     try {
       const response = await fetch(`http://localhost:5000/api/advisor/notes/${selectedRequestId}`, {
-        method: 'POST', // Change to POST for adding a new note
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          content: newNoteContent,
-          role: 'Advisor', // Adjust as needed
+          content: newNoteContent, // Ensure this matches the backend
+          role: 'Advisor', // Role of the person adding the note
         }),
       });
   
       if (response.ok) {
         const newNote = await response.json();
-        setNotes((prevNotes) => [...prevNotes, newNote]); // Append the new note to the existing notes
-        setNewNoteContent(''); // Clear the textarea
+        setNotes((prevNotes) => [newNote, ...prevNotes]); // Prepend the new note
+        setNewNoteContent(''); // Clear the input field
         alert('Note saved successfully!');
       } else {
         const errorData = await response.json();
@@ -293,6 +295,7 @@ function AdvisorDashboard() {
       alert('Failed to save note.');
     }
   };
+  
   
   // New function to handle filter changes
   const handleFilterChange = (status) => {
@@ -409,18 +412,19 @@ function AdvisorDashboard() {
           <div className="modal-content">
             <h2>Notes</h2>
             <div className="notes-list">
-              {notes.map((note) => (
-                <div key={note.note_id} className="note-item">
-                  <p>
-                    <strong>{note.role}:</strong> {note.note_text}
-                  </p>
-                  <p>
-                    <em>{new Date(note.created_at).toLocaleString()}</em>
-                  </p>
-                  <hr />
-                </div>
-              ))}
-            </div>
+  {notes.map((note) => (
+    <div key={note.note_id} className="note-item">
+      <p>
+        <strong>{note.role}:</strong> {note.content}
+      </p>
+      <p className="note-timestamp">
+        <em>{new Date(note.created_at).toLocaleString()}</em>
+      </p>
+      <hr />
+    </div>
+  ))}
+</div>
+
             <h3>Add a New Note</h3>
             <textarea
               value={newNoteContent}
