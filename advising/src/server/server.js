@@ -20,6 +20,10 @@
 
   app.use('/api', globalRoutes);
   app.use('/api', studentroutes); // Use student routes
+  app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+  });
   app.use('/api/advisor', advisorRoutes);
   app.use('/api/department-chair', departmentChairRoutes);
   app.use('/api/faculty', facultyRoutes);
