@@ -43,7 +43,7 @@ export const getAdvisorDashboard = async (req, res) => {
         pw.request_id, pw.course_code, pw.course_title, pw.reason_to_take, 
         pw.justification, pw.senior_design_request, pw.status, pw.term_requested, 
         pw.coop_request, pw.jd_document_path, pw.submitted_by, 
-        s.first_name, s.last_name
+        s.first_name, s.last_name, pw.auto_processed
       FROM prerequisite_waivers AS pw
       JOIN students AS s ON pw.submitted_by = s.university_id
       WHERE pw.submitted_by IN (?);
@@ -528,7 +528,7 @@ export const getCompletedCoopReviews = async (req, res) => {
   }
 };
 
-const upload = multer({
+export const upload = multer({
   dest: 'uploads/', // Ensure this directory exists and is writable
   limits: { fileSize: 10 * 1024 * 1024 }, // Limit file size to 10MB
   fileFilter: function (req, file, cb) {
