@@ -91,28 +91,39 @@ function AdvisorDashboard() {
 
 
 
-  const fetchStudentDetails = async (studentId) => {
-    const token = localStorage.getItem('token');
-    try {
-      const response = await fetch(`http://localhost:5000/api/advisor/student-details/${studentId}`, {
+const fetchStudentDetails = async (studentId, requestId) => {
+  const token = localStorage.getItem('token');
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/advisor/student-details/${studentId}?requestId=${requestId}`,
+      {
         headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    if (response.ok) {
+      const data = await response.json();
+
+      // Check for COOP details and include them
+      const coopDetails = data.coopDetails || [];
+      console.log('Fetched COOP Details:', coopDetails); // Debugging purpose
+
+      setStudentDetails({
+        ...data,
+        coopDetails, // Add COOP details to the student details state
       });
 
-
-      if (response.ok) {
-        const data = await response.json();
-        setStudentDetails(data);
-        setShowModal(true);
-      } else {
-        console.error('Error fetching student details');
-        const errorData = await response.json();
-        setError(errorData.msg || 'Error fetching student details');
-      }
-    } catch (err) {
-      console.error('Error fetching student details:', err);
-      setError('Server error');
+      setShowModal(true);
+    } else {
+      console.error('Error fetching student details');
+      const errorData = await response.json();
+      setError(errorData.msg || 'Error fetching student details');
     }
-  };
+  } catch (err) {
+    console.error('Error fetching student details:', err);
+    setError('Server error');
+  }
+};
 
 
   const handleEditRequest = (request) => {
@@ -349,7 +360,7 @@ function AdvisorDashboard() {
   // Function to determine if actions should be shown based on request status
   const shouldShowActions = (request) => {
     // Adjust this logic based on your requirements
-    return request.status === 'Pending' || request.status === 'In-Review' || request.status === 'Pending with COOP';
+    return request.status === 'Pending' || request.status === 'In-Review' || request.status === 'Pending with COOP' || request.status === 'COOP Review Complete';
   };
 
 
@@ -441,7 +452,7 @@ function AdvisorDashboard() {
                   <td>
                     {/* View Details */}
                     <button
-                      onClick={() => fetchStudentDetails(request.submitted_by)}
+                      onClick={() => fetchStudentDetails(request.submitted_by, request.request_id)}
                       className="action-button vie-details"
                     >
                       View Details
@@ -455,14 +466,14 @@ function AdvisorDashboard() {
                       Edit
                     </button>
   
-                    {/* Send to Dept Chair for Pending Requests */}
-                    {request.status === 'Pending' && (
-                      <button
-                        onClick={() => handleSendToDeptChair(request.request_id)}
-                        className="action-button send-dept-chair"
-                      >
-                        Send to Dept Chair
-                      </button>
+{/* Send to Dept Chair */}
+{['Pending', 'COOP Review Complete'].includes(request.status) && (
+    <button
+      onClick={() => handleSendToDeptChair(request.request_id)}
+      className="action-button send-dept-chair"
+    >
+      Send to Dept Chair
+    </button>
                     )}
   
                     {/* Send to Student for Approved/Rejected Requests */}
@@ -532,78 +543,100 @@ function AdvisorDashboard() {
       )}
 
 
-      {/* Student Details Modal */}
-      {showModal && studentDetails && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h2>Student Details</h2>
-            <p>
-              <strong>Name:</strong> {`${studentDetails.first_name} ${studentDetails.last_name}`}
-            </p>
-            <p>
-              <strong>Email:</strong> {studentDetails.email_id}
-            </p>
-            <p>
-              <strong>CGPA:</strong> {studentDetails.cgpa}
-            </p>
-            <p>
-              <strong>Program:</strong> {studentDetails.program}
-            </p>
-            <p>
-              <strong>Year Level:</strong> {studentDetails.year_level}
-            </p>
-            <p>
-              <strong>Term Enrolled:</strong> {studentDetails.year_enrolled}
-            </p>
-            <p>
-              <strong>Current Term:</strong> {studentDetails.current_term}
-            </p>
+{/* Student Details Modal */}
+{showModal && studentDetails && (
+  <div className="modal-overlay">
+    <div className="modal-content">
+      <h2>Student Details</h2>
+      <p>
+        <strong>Name:</strong> {`${studentDetails.first_name} ${studentDetails.last_name}`}
+      </p>
+      <p>
+        <strong>Email:</strong> {studentDetails.email_id}
+      </p>
+      <p>
+        <strong>CGPA:</strong> {studentDetails.cgpa}
+      </p>
+      <p>
+        <strong>Program:</strong> {studentDetails.program}
+      </p>
+      <p>
+        <strong>Year Level:</strong> {studentDetails.year_level}
+      </p>
+      <p>
+        <strong>Term Enrolled:</strong> {studentDetails.year_enrolled}
+      </p>
+      <p>
+        <strong>Current Term:</strong> {studentDetails.current_term}
+      </p>
 
+      <h3>Prerequisites for Requested Course</h3>
+      <table className="prerequisites-table">
+        <thead>
+          <tr>
+            <th>Course Code</th>
+            <th>Course Title</th>
+          </tr>
+        </thead>
+        <tbody>
+          {studentDetails.prerequisites.map((prerequisite) => (
+            <tr key={prerequisite.prerequisite_course_code}>
+              <td>{prerequisite.prerequisite_course_code}</td>
+              <td>{prerequisite.prerequisite_title}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
-            <h3>Prerequisites for Requested Course</h3>
-            <table className="prerequisites-table">
-              <thead>
-                <tr>
-                  <th>Course Code</th>
-                  <th>Course Title</th>
+      <h3>Course Log</h3>
+      <table className="course-log-table">
+        <thead>
+          <tr>
+            <th>Course Code</th>
+            <th>Course Title</th>
+            <th>Term Taken</th>
+            <th>Grade</th>
+          </tr>
+        </thead>
+        <tbody>
+          {studentDetails.courseLog.map((course) => (
+            <tr key={course.course_code}>
+              <td>{course.course_code}</td>
+              <td>{course.course_title}</td>
+              <td>{course.term_taken}</td>
+              <td>{course.grade}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* COOP Details */}
+      {studentDetails.coopDetails && studentDetails.coopDetails.length > 0 && (
+        <div>
+          <h3>COOP Details</h3>
+          <table className="coop-details-table">
+            <thead>
+              <tr>
+                <th>COOP Course</th>
+                <th>Completed</th>
+              </tr>
+            </thead>
+            <tbody>
+              {studentDetails.coopDetails.map((coop) => (
+                <tr key={coop.coop_course}>
+                  <td>{coop.coop_course}</td>
+                  <td>{coop.completed ? 'Yes' : 'No'}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {studentDetails.prerequisites.map((prerequisite) => (
-                  <tr key={prerequisite.prerequisite_course_code}>
-                    <td>{prerequisite.prerequisite_course_code}</td>
-                    <td>{prerequisite.prerequisite_title}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-
-            <h3>Course Log</h3>
-            <table className="course-log-table">
-              <thead>
-                <tr>
-                  <th>Course Code</th>
-                  <th>Course Title</th>
-                  <th>Term Taken</th>
-                  <th>Grade</th>
-                </tr>
-              </thead>
-              <tbody>
-                {studentDetails.courseLog.map((course) => (
-                  <tr key={course.course_code}>
-                    <td>{course.course_code}</td>
-                    <td>{course.course_title}</td>
-                    <td>{course.term_taken}</td>
-                    <td>{course.grade}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <button onClick={closeModal}>Close</button>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
+
+      <button onClick={closeModal}>Close</button>
+    </div>
+  </div>
+)}
 
 
       {/* Edit Request Modal */}

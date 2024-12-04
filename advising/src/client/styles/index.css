@@ -305,38 +305,55 @@ font-size: 18px; /* Adjust font size as needed */
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
   position: sticky; /* Keeps the notifications in place when scrolling */
   top: 20px; /* Space from the top of the page */
-  height: fit-content; /* Ensures the height adjusts dynamically */
+  max-height: 500px; /* Fixed height for scrollable content */
+  overflow-y: auto; /* Enables scrolling when content overflows */
 }
 
- 
+/* Custom Scroll Bar Styling */
+.notification-panel::-webkit-scrollbar {
+  width: 8px; /* Width of the scroll bar */
+}
+
+.notification-panel::-webkit-scrollbar-thumb {
+  background: orange; /* Scrollbar thumb color */
+  border-radius: 5px; /* Rounded corners for the scroll bar */
+}
+
+.notification-panel::-webkit-scrollbar-thumb:hover {
+  background: #cc8400; /* Darker orange when hovered */
+}
+
+/* Notification Panel Heading */
 .notification-panel h3 {
-font-size: 20px; 
-margin-bottom: 20px; 
-color: #333; 
+  font-size: 20px;
+  margin-bottom: 20px;
+  color: #333;
 }
- 
+
+/* Notification List */
 .notification-panel ul {
-list-style: none; 
-padding: 0; 
+  list-style: none;
+  padding: 0;
 }
- 
+
+/* Individual Notifications */
 .notification-panel li {
-background-color: #fff; 
-padding: 30px; 
-margin-bottom: 50px; 
-border-radius: 5px; 
-box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
- 
+  background-color: #fff;
+  padding: 30px;
+  margin-bottom: 50px;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
- 
+
 .notification-panel li:hover {
-background-color: #f3f3f3; 
-cursor: pointer; 
+  background-color: #f3f3f3;
+  cursor: pointer;
 }
- 
+
+/* Notification Text */
 .notification-panel p {
-font-size: 14px; 
-color: #888; 
+  font-size: 14px;
+  color: #888;
 }
  
 /* Prerequisite Waiver Form */

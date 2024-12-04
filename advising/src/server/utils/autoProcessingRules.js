@@ -84,6 +84,7 @@ export const evaluateAutoProcessing = async (request) => {
     }
   }
 
-  // Default: Requires manual review
-  return { status: 'Pending', reason: 'Requires manual review.' };
-};
+   // Default: Requires manual review
+   return { status: 'Pending', reason: 'Requires manual review.' };
+  };
+  

@@ -151,9 +151,16 @@ function PrerequisiteWaiver() {
               <input type="number" step="0.01" name="cgpa" value={formData.cgpa} readOnly required />
             </label>
             <label>
-              Term Requested:
-              <input type="text" name="term" value={formData.term} onChange={handleInputChange} placeholder="e.g., Fall 2024 (2241)" required />
-            </label>
+  Term Requested:
+  <input
+    type="number"
+    name="term"
+    value="2241" // Hardcoded value
+    placeholder="e.g., Fall 2024 (2241)"
+    readOnly // Make it read-only if you don't want the user to change it
+    required
+  />
+</label>
             <label>
               Class Requested:
               <Select
@@ -181,10 +188,6 @@ function PrerequisiteWaiver() {
               COOP Waiver:
               <input type="radio" name="coopWaiver" value="yes" checked={formData.coopWaiver === 'yes'} onChange={handleInputChange} /> Yes
               <input type="radio" name="coopWaiver" value="no" checked={formData.coopWaiver === 'no'} onChange={handleInputChange} /> No
-            </label>
-            <label>
-              Upload JD (PDF only):
-              <input type="file" name="jdDocument" accept=".pdf" onChange={handleInputChange} />
             </label>
             <button type="submit">Submit</button>
           </form>

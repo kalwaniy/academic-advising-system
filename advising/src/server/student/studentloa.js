@@ -41,6 +41,7 @@ const getStudentData = async (req, res) => {
 };
 
 
+
 const submitWaiverRequest = async (req, res) => {
   const {
     classRequest,
@@ -58,18 +59,17 @@ const submitWaiverRequest = async (req, res) => {
   }
 
   try {
-    // Fetch course details
     const [courseRows] = await db.query('SELECT course_title FROM courses WHERE course_code = ?', [classRequest]);
 
     if (!courseRows.length) {
       logger.warn(`No course found for code: ${classRequest}`);
       return res.status(400).json({ msg: 'Course not found.' });
     }
+
     const course_title = courseRows[0].course_title;
 
-    // Fetch advisor information for the student
     const [advisorRows] = await db.query(
-      `SELECT aa.university_id AS advisor_id, aa.email_id AS advisor_email, aa.first_name, aa.last_name
+      `SELECT aa.email_id AS advisor_email, aa.first_name, aa.last_name
        FROM academic_advisors aa
        JOIN advisor_student_relation ar ON aa.university_id = ar.advisor_id
        WHERE ar.student_id = ?`,
@@ -81,22 +81,30 @@ const submitWaiverRequest = async (req, res) => {
       return res.status(400).json({ msg: 'No advisor found for the student.' });
     }
 
-    const {
-      advisor_id: advisorId,
-      advisor_email,
-      first_name: advisorFirstName,
-      last_name: advisorLastName,
-    } = advisorRows[0];
+    const { advisor_email, first_name: advisorFirstName, last_name: advisorLastName } = advisorRows[0];
 
-    // Default status for the request
-    const status = coopWaiver === 1 ? 'Pending with COOP' : 'Pending';
+    const request = { course_code: classRequest, submitted_by };
+    const evaluationResult = await evaluateAutoProcessing(request);
 
-    // Insert waiver request into the database
+    let status = 'Pending';
+    let autoProcessReason = '';
+    if (evaluationResult && evaluationResult.status) {
+      status = evaluationResult.status;
+      autoProcessReason = evaluationResult.reason || '';
+    }
+
+    const auto_processed = status === 'Approved' || status === 'Rejected' ? 1 : 0;
+
+    if (coopWaiver === 1) {
+      status = 'Pending with COOP';
+    }
+
     const waiverQuery = `
       INSERT INTO prerequisite_waivers 
-      (course_code, course_title, reason_to_take, justification, term_requested, submitted_by, senior_design_request, coop_request, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+      (course_code, course_title, reason_to_take, justification, term_requested, submitted_by, senior_design_request, coop_request, status, auto_processed, auto_process_reason)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
     `;
+
     await db.query(waiverQuery, [
       classRequest,
       course_title,
@@ -107,39 +115,64 @@ const submitWaiverRequest = async (req, res) => {
       seniorDesignRequest,
       coopWaiver,
       status,
+      auto_processed,
+      autoProcessReason,
     ]);
 
-    // Add notification for the advisor
-    const notificationQuery = `
-      INSERT INTO notifications (user_id, message)
-      VALUES (?, ?);
-    `;
-    const notificationMessage = `A new prerequisite waiver request for the course ${course_title} has been submitted by a student.`;
-    await db.query(notificationQuery, [advisorId, notificationMessage]);
-
-    // Notify the student about successful submission
     const studentEmailQuery = 'SELECT email_id, first_name, last_name FROM students WHERE university_id = ?';
     const [studentRows] = await db.query(studentEmailQuery, [submitted_by]);
 
     if (studentRows.length) {
       const { email_id: studentEmail, first_name: studentFirstName, last_name: studentLastName } = studentRows[0];
 
-      const emailSubject = `Prerequisite Waiver Request Submitted: ${course_title}`;
-      const emailBody = `
-Dear ${studentFirstName} ${studentLastName},
+      let emailSubject = '';
+      let emailBody = '';
 
-Your prerequisite waiver request for the course ${classRequest} - ${course_title} has been submitted and is pending review by your academic advisor.
+      if (status === 'Approved') {
+        emailSubject = `Prerequisite Waiver Request Approved: ${course_title}`;
+        emailBody = `
+          Dear ${studentFirstName} ${studentLastName},
 
-You will be notified once a decision has been made.
+          Your prerequisite waiver request for the course ${classRequest} - ${course_title} has been approved automatically.
 
-Best regards,
-University Waiver System
-      `;
+          Reason: ${autoProcessReason}
 
-      // Send email to the student
+          You may proceed to enroll in the course.
+
+          Best regards,
+          University Waiver System
+        `;
+      } else if (status === 'Rejected') {
+        emailSubject = `Prerequisite Waiver Request Rejected: ${course_title}`;
+        emailBody = `
+          Dear ${studentFirstName} ${studentLastName},
+
+          Your prerequisite waiver request for the course ${classRequest} - ${course_title} has been automatically rejected.
+
+          Reason: ${autoProcessReason}
+
+          Please contact your academic advisor for further assistance.
+
+          Best regards,
+          University Waiver System
+        `;
+      } else {
+        emailSubject = `Prerequisite Waiver Request Submitted: ${course_title}`;
+        emailBody = `
+          Dear ${studentFirstName} ${studentLastName},
+
+          Your prerequisite waiver request for the course ${classRequest} - ${course_title} has been submitted and is pending review by your academic advisor.
+
+          You will be notified once a decision has been made.
+
+          Best regards,
+          University Waiver System
+        `;
+      }
+
       try {
         await sendEmail(studentEmail, emailSubject, emailBody);
-        logger.info(`Email sent to student (${studentEmail}) regarding request submission.`);
+        logger.info(`Email sent to student (${studentEmail}) regarding request status: ${status}`);
       } catch (emailError) {
         logger.error(`Failed to send email to student (${studentEmail}): ${emailError.message}`);
       }
@@ -147,9 +180,43 @@ University Waiver System
       logger.warn(`No student record found for university_id: ${submitted_by}`);
     }
 
+    if (advisor_email) {
+      const emailSubject = `New Prerequisite Waiver Request: ${course_title}`;
+      const emailBody = `
+        Dear ${advisorFirstName} ${advisorLastName},
+
+        A new prerequisite waiver request has been submitted by the student with University ID: ${submitted_by}.
+
+        Details:
+        - Course Code: ${classRequest}
+        - Course Title: ${course_title}
+        - Term Requested: ${term}
+        - Reason: ${studentReason}
+        - Detailed Reason: ${detailedReason}
+        - Senior Design Request: ${seniorDesignRequest ? 'Yes' : 'No'}
+        - COOP Waiver: ${coopWaiver ? 'Yes' : 'No'}
+
+        Please log in to the advisor dashboard to review and process the request.
+
+        Best regards,
+        University Waiver System
+      `;
+
+      try {
+        await sendEmail(advisor_email, emailSubject, emailBody);
+        logger.info(`Email sent to advisor (${advisor_email}) for manual review.`);
+      } catch (emailError) {
+        logger.error(`Failed to send email to advisor (${advisor_email}): ${emailError.message}`);
+      }
+    } else {
+      logger.warn(`No advisor email found for advisor of student: ${submitted_by}`);
+    }
+
     res.status(200).json({
       success: true,
       msg: 'Prerequisite waiver request submitted successfully.',
+      status,
+      autoProcessReason,
     });
   } catch (err) {
     logger.error(`Error submitting waiver request: ${err.message}`, { error: err });
@@ -158,6 +225,9 @@ University Waiver System
 };
 
 export default submitWaiverRequest;
+
+
+
 
 
 // Function to get all available courses
@@ -193,4 +263,3 @@ const getCourses = async (req, res) => {
 
 // Export all functions as named exports
 export { getStudentData, submitWaiverRequest, getCourses };
-

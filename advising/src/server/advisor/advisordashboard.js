@@ -68,6 +68,7 @@ export const getStudentDetails = async (req, res) => {
   const { studentId } = req.params;
 
   try {
+    // Fetch basic student details
     const studentQuery = `
       SELECT 
         s.university_id, s.first_name, s.last_name, s.email_id, 
@@ -86,6 +87,7 @@ export const getStudentDetails = async (req, res) => {
     const studentData = studentRows[0];
     logWithRequestContext(req, 'debug', `Fetched student data: ${JSON.stringify(studentData)}`);
 
+    // Fetch course log
     const courseLogQuery = `
       SELECT sc.course_code, c.course_title, sc.term_taken, sc.grade
       FROM student_courses sc
@@ -96,6 +98,7 @@ export const getStudentDetails = async (req, res) => {
     studentData.courseLog = courseLogRows;
     logWithRequestContext(req, 'debug', `Fetched course log: ${JSON.stringify(courseLogRows)}`);
 
+    // Fetch prerequisites
     const prerequisitesQuery = `
       SELECT cp.prerequisite_course_code, c.course_title AS prerequisite_title
       FROM course_prerequisites cp
@@ -106,12 +109,23 @@ export const getStudentDetails = async (req, res) => {
     studentData.prerequisites = prerequisitesRows;
     logWithRequestContext(req, 'debug', `Fetched prerequisites: ${JSON.stringify(prerequisitesRows)}`);
 
+    // Fetch COOP details
+    const coopDetailsQuery = `
+      SELECT coop_course, completed
+      FROM coop_status
+      WHERE student_id = ?;
+    `;
+    const [coopDetailsRows] = await db.query(coopDetailsQuery, [studentId]);
+    studentData.coopDetails = coopDetailsRows || [];
+    logWithRequestContext(req, 'debug', `Fetched COOP details: ${JSON.stringify(coopDetailsRows)}`);
+
     res.status(200).json(studentData);
   } catch (err) {
     logWithRequestContext(req, 'error', `Error fetching student details: ${err.message}`);
     res.status(500).json({ error: 'Server error' });
   }
 };
+
 
 
 

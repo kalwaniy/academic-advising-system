@@ -90,15 +90,6 @@ function AdvisorLanding() {
               <p>{section.description}</p>
             </div>
           ))}
-          {/* Add Create Reports Button */}
-          <div
-            className="dashboard-card clickable"
-            onClick={() => setModalOpen(true)}
-          >
-            <div className="card-icon">📊</div>
-            <h3>Create Reports</h3>
-            <p>Generate reports for waiver statistics</p>
-          </div>
         </div>
       </div>
 
