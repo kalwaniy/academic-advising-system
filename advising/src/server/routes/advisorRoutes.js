@@ -14,30 +14,28 @@ import {
   downloadExcelReport,
   getCompletedCoopReviews,
   addNote,
-  uploadCsvFiles
+  uploadCsvFiles,
+  sendToStudent, // Import the new controller function
 } from '../advisor/advisordashboard.js'; // Import from the advisor folder
 import { verifyToken } from '../middleware/auth.js';
 
 const router = Router();
 
-
 router.get('/dashboard', verifyToken, getAdvisorDashboard);
 
-
 router.get('/student-details/:studentId', verifyToken, getStudentDetails);
-
 
 router.get('/user-info', verifyToken, getAdvisorUserInfo);
 
 router.put('/update-request/:requestId', verifyToken, updateWaiverRequest);
 
-router.get('/courses', verifyToken, getCourses)
+router.get('/courses', verifyToken, getCourses);
 
 router.get('/notes/:requestId', verifyToken, getNotesByRequestId);
 
-router.put('/notes/:requestId', verifyToken, upsertNote); 
+router.put('/notes/:requestId', verifyToken, upsertNote);
 
-router.put('/notes/:requestId/advisor', verifyToken, addAdvisorNote); 
+router.put('/notes/:requestId/advisor', verifyToken, addAdvisorNote);
 
 router.get('/report', generateReport);
 
@@ -51,6 +49,7 @@ router.post('/notes/:requestId', verifyToken, addNote);
 
 router.post('/upload-csv', verifyToken, uploadCsvFiles);
 
+// New route for sending notification/email to the student
+router.post('/send-to-student/:requestId', verifyToken, sendToStudent);
 
 export default router;
-

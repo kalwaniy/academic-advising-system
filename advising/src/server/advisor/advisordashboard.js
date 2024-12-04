@@ -187,6 +187,62 @@ export const updateWaiverRequest = async (req, res) => {
 };
 
 
+export const sendToStudent = async (req, res) => {
+  const { requestId } = req.params;
+
+  try {
+    // Fetch the waiver request and student details
+    const query = `
+      SELECT pw.status, pw.course_title, s.email_id, s.first_name, s.last_name, s.university_id
+      FROM prerequisite_waivers pw
+      JOIN students s ON pw.submitted_by = s.university_id
+      WHERE pw.request_id = ?;
+    `;
+    const [rows] = await db.query(query, [requestId]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ msg: 'Request or student not found' });
+    }
+
+    const { status, course_title, email_id, first_name, last_name, university_id } = rows[0];
+
+    if (status !== 'Approved' && status !== 'Rejected') {
+      return res.status(400).json({ msg: 'Only Approved or Rejected requests can be sent to the student.' });
+    }
+
+    // Prepare email content
+    const emailSubject = `Waiver ${status}: ${course_title}`;
+    const emailBody = `
+Dear ${first_name} ${last_name},
+
+Your waiver request for the course "${course_title}" has been ${status.toLowerCase()}.
+
+Best regards,  
+University Waiver System
+    `;
+
+    // Send email to the student
+    await sendEmail(email_id, emailSubject, emailBody);
+    logWithRequestContext(req, 'info', `Email sent to student (${email_id}) for Request ID: ${requestId}`);
+
+    // Insert notification for the student
+    const notificationQuery = `
+      INSERT INTO notifications (user_id, message, is_read, created_at) 
+      VALUES (?, ?, 0, NOW());
+    `;
+    const notificationMessage = `Your waiver request for "${course_title}" has been ${status.toLowerCase()}.`;
+    await db.query(notificationQuery, [university_id, notificationMessage]);
+
+    logWithRequestContext(req, 'info', `Notification added for student (${university_id}) for Request ID: ${requestId}`);
+
+    res.status(200).json({ msg: `Notification and email sent to student for Request ID: ${requestId}` });
+  } catch (err) {
+    logWithRequestContext(req, 'error', `Error sending to student: ${err.message}`);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+
 export const getCourses = async (req, res) => {
   try {
     // Fetch all courses with their codes and titles

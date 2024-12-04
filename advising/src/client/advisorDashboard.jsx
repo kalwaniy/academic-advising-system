@@ -327,6 +327,30 @@ function AdvisorDashboard() {
     // Adjust this logic based on your requirements
     return request.status === 'Pending' || request.status === 'In-Review' || request.status === 'Pending with COOP';
   };
+
+  const handleSendToStudent = async (requestId) => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`http://localhost:5000/api/advisor/send-to-student/${requestId}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      if (response.ok) {
+        alert('Notification and email sent to the student!');
+        // Optionally, refresh the request list
+      } else {
+        const errorData = await response.json();
+        alert(errorData.msg || 'Error sending notification and email to the student.');
+      }
+    } catch (err) {
+      console.error('Error sending to student:', err);
+      alert('Server error. Try again later.');
+    }
+  };
+  
   
   return (
   <div className="advisor-dashboard">
@@ -356,55 +380,70 @@ function AdvisorDashboard() {
 </div>
 
       {/* Display Filtered Requests */}
-      {filteredRequests.length > 0 ? (
-        <div className="table-container">
-          <table className="dashboard-table">
-            <thead>
-              <tr>
-                <th>Request ID</th>
-                <th>Course Code</th>
-                <th>Course Title</th>
-                <th>Reason</th>
-                <th>Justification</th>
-                <th>Term Requested</th>
-                <th>Student Name</th>
-                <th>Status</th>
-                <th>Auto Processed</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRequests.map((request) => (
-                <tr key={request.request_id}>
-                  <td>{request.request_id}</td>
-                  <td>{request.course_code}</td>
-                  <td>{request.course_title}</td>
-                  <td>{request.reason_to_take}</td>
-                  <td>{request.justification}</td>
-                  <td>{request.term_requested}</td>
-                  <td>{`${request.first_name} ${request.last_name}`}</td>
-                  <td>{request.status}</td>
-                  <td>{request.auto_processed ? 'Yes' : 'No'}</td>
-                  <td>
-                    <button onClick={() => fetchStudentDetails(request.submitted_by)}>View Details</button>
-                    { (
-                      <>
-                        <button onClick={() => handleEditRequest(request)}>Edit</button>
-                        {request.status === 'Pending' && (
-                          <button onClick={() => handleSendToDeptChair(request.request_id)}>Send to Dept Chair</button>
-                        )}
-                      </>
-                    )}
-                    <button onClick={() => openNotesModal(request.request_id)}>Edit/View Notes</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <p>No requests found for the selected filter.</p>
-      )}
+{filteredRequests.length > 0 ? (
+  <div className="table-container">
+    <table className="dashboard-table">
+      <thead>
+        <tr>
+          <th>Request ID</th>
+          <th>Course Code</th>
+          <th>Course Title</th>
+          <th>Reason</th>
+          <th>Justification</th>
+          <th>Term Requested</th>
+          <th>Student Name</th>
+          <th>Status</th>
+          <th>Auto Processed</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {filteredRequests.map((request) => (
+          <tr key={request.request_id}>
+            <td>{request.request_id}</td>
+            <td>{request.course_code}</td>
+            <td>{request.course_title}</td>
+            <td>{request.reason_to_take}</td>
+            <td>{request.justification}</td>
+            <td>{request.term_requested}</td>
+            <td>{`${request.first_name} ${request.last_name}`}</td>
+            <td>{request.status}</td>
+            <td>{request.auto_processed ? 'Yes' : 'No'}</td>
+            <td>
+              {/* View Details */}
+              <button onClick={() => fetchStudentDetails(request.submitted_by)}>View Details</button>
+
+              {/* Edit Request */}
+              <button onClick={() => handleEditRequest(request)}>Edit</button>
+
+              {/* Send to Dept Chair for Pending Requests */}
+              {request.status === 'Pending' && (
+                <button onClick={() => handleSendToDeptChair(request.request_id)}>
+                  Send to Dept Chair
+                </button>
+              )}
+
+              {/* Send to Student for Approved/Rejected Requests */}
+              {['Approved', 'Rejected'].includes(request.status) && (
+                <button onClick={() => handleSendToStudent(request.request_id)}>
+                  Send to Student
+                </button>
+              )}
+
+              {/* Edit/View Notes */}
+              <button onClick={() => openNotesModal(request.request_id)}>
+                Edit/View Notes
+              </button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+) : (
+  <p>No requests found for the selected filter.</p>
+)}
+
 
       {/* Notes Modal */}
       {showModal && selectedRequestId && (
