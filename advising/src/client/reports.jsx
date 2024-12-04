@@ -92,18 +92,22 @@ const Reports = () => {
     };
 
     return (
-        <div>
-            <h1>Prerequisite Waiver Report</h1>
+        <div className="report-container">
+            <h1 className="report-heading">Prerequisite Waiver Report</h1>
             {loading ? (
-                <p>Loading...</p>
+                <p className="loading-text">Loading...</p>
             ) : error ? (
-                <div style={{ color: 'red' }}>
+                <div className="error-message">
                     <p>Error: {error}</p>
                 </div>
             ) : (
                 <>
-                    <Bar data={chartData} />
-                    <button onClick={handleDownloadExcel}>Download Excel</button>
+                    <div className="chart-container">
+                        <Bar data={chartData} />
+                    </div>
+                    <button className="download-btn" onClick={handleDownloadExcel}>
+                        Download Excel
+                    </button>
                 </>
             )}
         </div>

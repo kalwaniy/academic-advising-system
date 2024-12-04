@@ -46,7 +46,7 @@ function LoginPage() {
           navigate('/faculty-landing');
         } else if (decodedToken.role === 'coordinator') {
           navigate('/coordinator-dashboard');
-        } else {
+        }else {
           setError('Role not recognized');
         }
       } else {
@@ -61,46 +61,57 @@ function LoginPage() {
   return (
     <div className="login-page">
       <nav className="navbar">
-        <div className="navbar-brand">RIT</div>
+        <div className="navbar-brand"><a href="/">
+           
+          </a></div>
+        <div className="navbar-links">
+          <a href="/">Home</a> | <a href="/forms">Forms</a> | <a href="/coop">Coop</a>
+        </div>
       </nav>
-
-      <div className="login-box">
-        <h1 className="logo">RIT</h1>
-        <h2>Login</h2>
-        <form onSubmit={handleSubmit}>
-          {error && <p className="error">{error}</p>}
-          <div className="form-group">
-            <label htmlFor="username">Username</label>
-            <input
-              type="text"
-              id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="RIT Username"
-              required
-            />
+ 
+      <div className="login-container">
+        <div className="login-box">
+          <h2>LOGIN</h2>
+          <form onSubmit={handleSubmit}>
+            {error && <p className="error">{error}</p>}
+            <div className="form-group">
+              <label htmlFor="username">Username</label>
+              <input
+                type="text"
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="RIT Username"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="password">Password</label>
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                required
+              />
+            </div>
+            <button type="submit" className="login-button">Login</button>
+          </form>
+ 
+          <div className="login-footer">
+            <a href="/forgot-username">Forgot Username?</a> | <a href="/forgot-password">Forgot Password?</a>
+            <br />
+            <a href="/change-password">Change Password</a>
+            <p>
+              Need assistance? Please contact the RIT Service Center at 585-475-5000 or visit <a href="https://help.rit.edu">help.rit.edu</a>.
+            </p>
           </div>
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              required
-            />
-          </div>
-          <button type="submit" className="login-button">Login</button>
-        </form>
-        <div className="login-footer">
-          <a href="/forgot-username">Forgot Username?</a> |{' '}
-          <a href="/forgot-password">Forgot Password?</a>
-          <p>Need assistance? Contact RIT Service Center at 585-475-5000 or visit <a href="help.rit.edu">help.rit.edu</a></p>
         </div>
       </div>
     </div>
   );
-}
-
-export default LoginPage;
+ }
+ 
+ export default LoginPage;
+ 

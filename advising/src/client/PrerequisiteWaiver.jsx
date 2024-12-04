@@ -123,29 +123,17 @@ function PrerequisiteWaiver() {
       })
       .catch((err) => console.error('Error submitting form:', err));
   };
-  
-  
-  
 
   return (
-    <div style={{ display: 'flex', height: '100vh' }}>
-      <div style={{ width: '200px', backgroundColor: '#f0f0f0', padding: '20px' }}>
-        <ul style={{ listStyleType: 'none', padding: 0 }}>
-          <li style={{ marginBottom: '10px' }}>Page 1</li>
-          <li style={{ marginBottom: '10px' }}>Page 2</li>
-          <li style={{ marginBottom: '10px' }}>Page 3</li>
-        </ul>
-      </div>
+    <div className="waiver-container">
+      
 
-      <div style={{ flexGrow: 1 }}>
-        <div style={{ backgroundColor: '#FF5C00', color: '#fff', padding: '10px' }}>
-          <button onClick={() => navigate('/dashboard')} style={{ marginRight: '20px', backgroundColor: '#333', color: '#fff', border: 'none' }}>Home</button>
-          <button onClick={() => navigate('/LoginPage')} style={{ backgroundColor: '#333', color: '#fff', border: 'none' }}>Logout</button>
-        </div>
+      <div className="main-content">
+        
 
-        <div style={{ padding: '20px' }}>
+        <div className="form-container">
           <h1>Prerequisite Waiver Form</h1>
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxWidth: '400px' }}>
+          <form onSubmit={handleSubmit} className="waiver-form">
             <label>
               Name:
               <input type="text" name="name" value={formData.name} readOnly required />

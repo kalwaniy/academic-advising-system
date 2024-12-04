@@ -63,6 +63,16 @@ function AdvisorLanding() {
   };
 
   return (
+    <div className="advisor-dashboard">
+            <div className="login-page">
+                <nav className="navbar">
+                    <div className="navbar-brand">
+                    </div>
+                    <div className="navbar-links">
+                        <a href="/">Logout</a>
+                    </div>
+                </nav>
+            </div>
     <div className="dashboard-container">
       <div className="main-content">
         <header className="dashboard-header">
@@ -103,7 +113,7 @@ function AdvisorLanding() {
         </ul>
         <button onClick={() => setModalOpen(false)}>Close</button>
       </Modal>
-    </div>
+    </div></div>
   );
 }
 

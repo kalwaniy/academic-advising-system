@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import './styles/index.css';
 
+
 function AdvisorDashboard() {
   const [requests, setRequests] = useState([]);
   const [error, setError] = useState('');
@@ -18,7 +19,8 @@ function AdvisorDashboard() {
   const [filterStatus, setFilterStatus] = useState('All'); // New state for filter
   const [searchTerm, setSearchTerm] = useState('');
 
-  
+
+ 
   useEffect(() => {
     const fetchRequests = async () => {
         const token = localStorage.getItem('token');
@@ -28,10 +30,12 @@ function AdvisorDashboard() {
             return;
         }
 
+
         try {
             const response = await fetch('http://localhost:5000/api/advisor/dashboard', {
                 headers: { Authorization: `Bearer ${token}` },
             });
+
 
             if (response.ok) {
                 const data = await response.json();
@@ -48,6 +52,7 @@ function AdvisorDashboard() {
         }
     };
 
+
     const fetchCourseData = async () => {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -56,10 +61,12 @@ function AdvisorDashboard() {
             return;
         }
 
+
         try {
             const response = await fetch('http://localhost:5000/api/advisor/courses', {
                 headers: { Authorization: `Bearer ${token}` },
             });
+
 
             if (response.ok) {
                 const data = await response.json();
@@ -75,10 +82,13 @@ function AdvisorDashboard() {
         }
     };
 
+
     // Fetch data
     fetchRequests();
     fetchCourseData();
 }, []);
+
+
 
 
   const fetchStudentDetails = async (studentId) => {
@@ -87,6 +97,7 @@ function AdvisorDashboard() {
       const response = await fetch(`http://localhost:5000/api/advisor/student-details/${studentId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
 
       if (response.ok) {
         const data = await response.json();
@@ -103,10 +114,12 @@ function AdvisorDashboard() {
     }
   };
 
+
   const handleEditRequest = (request) => {
     setCurrentRequest(request);
     setEditModalVisible(true);
   };
+
 
   const handleSaveChanges = async () => {
     const token = localStorage.getItem('token');
@@ -119,6 +132,7 @@ function AdvisorDashboard() {
         },
         body: JSON.stringify(currentRequest),
       });
+
 
       if (response.ok) {
         alert('Request updated successfully!');
@@ -136,10 +150,12 @@ function AdvisorDashboard() {
     }
   };
 
+
   const closeModal = () => {
     setShowModal(false);
     setStudentDetails(null);
   };
+
 
   const handleCourseCodeChange = (code) => {
     const selectedCourse = courseData.find((course) => course.course_code === code);
@@ -150,6 +166,7 @@ function AdvisorDashboard() {
     }));
   };
 
+
   const handleCourseTitleChange = (title) => {
     const selectedCourse = courseData.find((course) => course.course_title === title);
     setCurrentRequest((prev) => ({
@@ -159,6 +176,7 @@ function AdvisorDashboard() {
     }));
   };
 
+
   const openNotesModal = async (requestId) => {
     setSelectedRequestId(requestId);
     try {
@@ -167,7 +185,7 @@ function AdvisorDashboard() {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
       });
-  
+ 
       if (response.ok) {
         const data = await response.json();
         console.log('Fetched notes:', data); // Debugging step
@@ -181,14 +199,14 @@ function AdvisorDashboard() {
     }
     setShowModal(true);
   };
-  
-  
-  
-  
+ 
+ 
+ 
+ 
   const saveNotes = async () => {
     const token = localStorage.getItem('token');
     console.log('Authorization token:', token);
-  
+ 
     try {
       const response = await fetch(`http://localhost:5000/api/advisor/notes/${selectedRequestId}`, {
         method: 'PUT',
@@ -200,7 +218,7 @@ function AdvisorDashboard() {
           content: notes, // Ensure this matches the expected backend input
         }),
       });
-  
+ 
       if (response.ok) {
         alert('Note saved successfully!');
       } else {
@@ -241,6 +259,7 @@ function AdvisorDashboard() {
     }
   };
 
+
   const handleCoopAction = async (requestId, action, notes = '') => {
     const token = localStorage.getItem('token');
     try {
@@ -253,6 +272,7 @@ function AdvisorDashboard() {
         body: JSON.stringify({ action, notes }),
       });
 
+
       if (response.ok) {
         alert('COOP action processed successfully!');
         setCoopRequests((prev) => prev.filter((req) => req.request_id !== requestId)); // Remove completed request
@@ -264,6 +284,7 @@ function AdvisorDashboard() {
       alert('Server error while processing COOP action.');
     }
   };
+
 
   const saveNewNote = async () => {
     const token = localStorage.getItem('token');
@@ -279,7 +300,7 @@ function AdvisorDashboard() {
           role: 'Advisor', // Role of the person adding the note
         }),
       });
-  
+ 
       if (response.ok) {
         const newNote = await response.json();
         setNotes((prevNotes) => [newNote, ...prevNotes]); // Prepend the new note
@@ -295,12 +316,13 @@ function AdvisorDashboard() {
       alert('Failed to save note.');
     }
   };
-  
-  
+ 
+ 
   // New function to handle filter changes
   const handleFilterChange = (status) => {
     setFilterStatus(status);
   };
+
 
   // Filtered requests based on selected status
   const filteredRequests = requests.filter((request) => {
@@ -308,6 +330,7 @@ function AdvisorDashboard() {
     if (filterStatus === 'COOP') return request.coop_request === 1 && request.status === 'Pending with COOP';
     return request.status === filterStatus;
   })
+
 
   .filter((request) => {
     // Apply search filter
@@ -322,11 +345,13 @@ function AdvisorDashboard() {
     );
   });
 
+
   // Function to determine if actions should be shown based on request status
   const shouldShowActions = (request) => {
     // Adjust this logic based on your requirements
     return request.status === 'Pending' || request.status === 'In-Review' || request.status === 'Pending with COOP';
   };
+
 
   const handleSendToStudent = async (requestId) => {
     const token = localStorage.getItem('token');
@@ -337,7 +362,7 @@ function AdvisorDashboard() {
           Authorization: `Bearer ${token}`,
         },
       });
-  
+ 
       if (response.ok) {
         alert('Notification and email sent to the student!');
         // Optionally, refresh the request list
@@ -350,17 +375,20 @@ function AdvisorDashboard() {
       alert('Server error. Try again later.');
     }
   };
-  
-  
+ 
+ 
   return (
-  <div className="advisor-dashboard">
+    <div className="advisor-dashboard">
       <h1 className="dashboard-title">Prerequisite Waiver Requests</h1>
       {error && <p className="error">{error}</p>}
-
+  
       {/* Filter Controls */}
       <div className="filter-controls">
         <label>Filter by Status: </label>
-        <select value={filterStatus} onChange={(e) => handleFilterChange(e.target.value)}>
+        <select
+          value={filterStatus}
+          onChange={(e) => handleFilterChange(e.target.value)}
+        >
           <option value="All">All</option>
           <option value="Pending">Pending</option>
           <option value="In-Review">In-Review</option>
@@ -371,115 +399,138 @@ function AdvisorDashboard() {
         </select>
       </div>
       <div className="search-container">
-  <input
-    type="text"
-    placeholder="Search by student name, course code, or course title"
-    value={searchTerm}
-    onChange={(e) => setSearchTerm(e.target.value)}
-  />
-</div>
-
+        <input
+          type="text"
+          placeholder="Search by student name, course code, or course title"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="search-input"
+        />
+      </div>
+  
       {/* Display Filtered Requests */}
-{filteredRequests.length > 0 ? (
-  <div className="table-container">
-    <table className="dashboard-table">
-      <thead>
-        <tr>
-          <th>Request ID</th>
-          <th>Course Code</th>
-          <th>Course Title</th>
-          <th>Reason</th>
-          <th>Justification</th>
-          <th>Term Requested</th>
-          <th>Student Name</th>
-          <th>Status</th>
-          <th>Auto Processed</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {filteredRequests.map((request) => (
-          <tr key={request.request_id}>
-            <td>{request.request_id}</td>
-            <td>{request.course_code}</td>
-            <td>{request.course_title}</td>
-            <td>{request.reason_to_take}</td>
-            <td>{request.justification}</td>
-            <td>{request.term_requested}</td>
-            <td>{`${request.first_name} ${request.last_name}`}</td>
-            <td>{request.status}</td>
-            <td>{request.auto_processed ? 'Yes' : 'No'}</td>
-            <td>
-              {/* View Details */}
-              <button onClick={() => fetchStudentDetails(request.submitted_by)}>View Details</button>
-
-              {/* Edit Request */}
-              <button onClick={() => handleEditRequest(request)}>Edit</button>
-
-              {/* Send to Dept Chair for Pending Requests */}
-              {request.status === 'Pending' && (
-                <button onClick={() => handleSendToDeptChair(request.request_id)}>
-                  Send to Dept Chair
-                </button>
-              )}
-
-              {/* Send to Student for Approved/Rejected Requests */}
-              {['Approved', 'Rejected'].includes(request.status) && (
-                <button onClick={() => handleSendToStudent(request.request_id)}>
-                  Send to Student
-                </button>
-              )}
-
-              {/* Edit/View Notes */}
-              <button onClick={() => openNotesModal(request.request_id)}>
-                Edit/View Notes
-              </button>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-) : (
-  <p>No requests found for the selected filter.</p>
-)}
-
-
+      {filteredRequests.length > 0 ? (
+        <div className="table-container">
+          <table className="dashboard-table">
+            <thead>
+              <tr>
+                <th>Request ID</th>
+                <th>Course Code</th>
+                <th>Course Title</th>
+                <th>Reason</th>
+                <th>Justification</th>
+                <th>Term Requested</th>
+                <th>Student Name</th>
+                <th>Status</th>
+                <th>Auto Processed</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRequests.map((request) => (
+                <tr key={request.request_id}>
+                  <td>{request.request_id}</td>
+                  <td>{request.course_code}</td>
+                  <td>{request.course_title}</td>
+                  <td>{request.reason_to_take}</td>
+                  <td>{request.justification}</td>
+                  <td>{request.term_requested}</td>
+                  <td>{`${request.first_name} ${request.last_name}`}</td>
+                  <td>{request.status}</td>
+                  <td>{request.auto_processed ? 'Yes' : 'No'}</td>
+                  <td>
+                    {/* View Details */}
+                    <button
+                      onClick={() => fetchStudentDetails(request.submitted_by)}
+                      className="action-button vie-details"
+                    >
+                      View Details
+                    </button>
+  
+                    {/* Edit Request */}
+                    <button
+                      onClick={() => handleEditRequest(request)}
+                      className="action-button edit-request"
+                    >
+                      Edit
+                    </button>
+  
+                    {/* Send to Dept Chair for Pending Requests */}
+                    {request.status === 'Pending' && (
+                      <button
+                        onClick={() => handleSendToDeptChair(request.request_id)}
+                        className="action-button send-dept-chair"
+                      >
+                        Send to Dept Chair
+                      </button>
+                    )}
+  
+                    {/* Send to Student for Approved/Rejected Requests */}
+                    {['Approved', 'Rejected'].includes(request.status) && (
+                      <button
+                        onClick={() => handleSendToStudent(request.request_id)}
+                        className="action-button send-student"
+                      >
+                        Send to Student
+                      </button>
+                    )}
+  
+                    {/* Edit/View Notes */}
+                    <button
+                      onClick={() => openNotesModal(request.request_id)}
+                      className="action-button note1"
+                    >
+                      Edit/View Notes
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p>No requests found for the selected filter.</p>
+      )}
+  
       {/* Notes Modal */}
       {showModal && selectedRequestId && (
-        <div className="modal">
-          <div className="modal-content">
-            <h2>Notes</h2>
-            <div className="notes-list">
-  {notes.map((note) => (
-    <div key={note.note_id} className="note-item">
-      <p>
-        <strong>{note.role}:</strong> {note.content}
-      </p>
-      <p className="note-timestamp">
-        <em>{new Date(note.created_at).toLocaleString()}</em>
-      </p>
-      <hr />
-    </div>
-  ))}
-</div>
-
-            <h3>Add a New Note</h3>
+        <div className="modal note1">
+          <div className="modal-content note1-content">
+            <h2 className="note1-title">Notes</h2>
+            <div className="notes-list note1-list">
+              {notes.map((note) => (
+                <div key={note.note_id} className="note1-item">
+                  <p>
+                    <strong>{note.role}:</strong> {note.content}
+                  </p>
+                  <p className="note1-timestamp">
+                    <em>{new Date(note.created_at).toLocaleString()}</em>
+                  </p>
+                  <hr />
+                </div>
+              ))}
+            </div>
+            <h3 className="note1-add-title">Add a New Note</h3>
             <textarea
               value={newNoteContent}
               onChange={(e) => setNewNoteContent(e.target.value)}
               rows="5"
               cols="50"
+              className="note1-textarea"
             />
-            <button onClick={saveNewNote} className="btn btn-success">
+            <button onClick={saveNewNote} className="btn btn-success note1-save">
               Save Note
             </button>
-            <button onClick={() => setShowModal(false)} className="btn btn-secondary">
+            <button
+              onClick={() => setShowModal(false)}
+              className="btn btn-secondary note1-close"
+            >
               Close
             </button>
           </div>
         </div>
       )}
+
 
       {/* Student Details Modal */}
       {showModal && studentDetails && (
@@ -508,6 +559,7 @@ function AdvisorDashboard() {
               <strong>Current Term:</strong> {studentDetails.current_term}
             </p>
 
+
             <h3>Prerequisites for Requested Course</h3>
             <table className="prerequisites-table">
               <thead>
@@ -525,6 +577,7 @@ function AdvisorDashboard() {
                 ))}
               </tbody>
             </table>
+
 
             <h3>Course Log</h3>
             <table className="course-log-table">
@@ -551,6 +604,7 @@ function AdvisorDashboard() {
           </div>
         </div>
       )}
+
 
       {/* Edit Request Modal */}
       {editModalVisible && currentRequest && (
@@ -643,4 +697,6 @@ function AdvisorDashboard() {
   );
 }
 
+
 export default AdvisorDashboard;
+
