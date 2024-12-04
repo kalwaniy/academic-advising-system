@@ -39,6 +39,8 @@ const getStudentData = async (req, res) => {
     res.status(500).json({ msg: 'Server error' });
   }
 };
+
+
 const submitWaiverRequest = async (req, res) => {
   const {
     classRequest,
@@ -87,7 +89,7 @@ const submitWaiverRequest = async (req, res) => {
     } = advisorRows[0];
 
     // Default status for the request
-    let status = 'Pending';
+    const status = coopWaiver === 1 ? 'Pending with COOP' : 'Pending';
 
     // Insert waiver request into the database
     const waiverQuery = `

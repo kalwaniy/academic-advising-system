@@ -6,7 +6,9 @@ import {
   getCoopVerificationDetails,
   getCoordinatorNotes,
   addCoordinatorNote,
-  getAllNotesByCoordinator
+  getAllNotesByCoordinator,
+  getCoopCompletionStatus,
+  updateCoopCompletionStatus
 } from '../coordinator/coordinatorcontroller.js';
 import { verifyToken } from '../middleware/auth.js';
 
@@ -35,6 +37,18 @@ router.post('/notes/:requestId', addCoordinatorNote);
 // Fetch all notes for a request (no role filter)
 router.get('/all-notes/:requestId', getAllNotesByCoordinator);
 
+router.get('/coop-completion/:studentId', getCoopCompletionStatus);
+
+router.post('/coop-completion/:studentId', updateCoopCompletionStatus);
+
+// Route to update COOP verification (mark completion)
+router.post('/coop-verification/:requestId', updateCoopVerification);
+
+// Route to notify advisor after COOP review completion
+router.post('/coop-verification/:requestId/notify-advisor', notifyAdvisorAfterCoopReview);
+
+// Route to get COOP verification details
+router.get('/coop-verification/:requestId/details', getCoopVerificationDetails);
 
 
 export default router;

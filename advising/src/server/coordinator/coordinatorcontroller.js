@@ -28,40 +28,49 @@ export const getPendingCoopWaiverRequests = async (req, res) => {
 };
 
 export const updateCoopVerification = async (req, res) => {
-    const { requestId } = req.params;
-    const { comments, coop1Completed, coop2Completed } = req.body;
-    const verifiedBy = req.user_id; // Coordinator's ID from token
-  
-    if (!requestId || coop1Completed === undefined || coop2Completed === undefined) {
-      return res.status(400).json({ msg: 'Request ID, COOP completion status, and comments are required.' });
+  const { requestId } = req.params;
+  const { comments, coop1Completed, coop2Completed } = req.body;
+  const verifiedBy = req.user_id; // Coordinator's ID from token
+
+  if (!requestId || coop1Completed === undefined || coop2Completed === undefined) {
+    return res.status(400).json({ msg: 'Request ID, COOP completion status, and comments are required.' });
+  }
+
+  try {
+    console.log(`Starting COOP verification for Request ID: ${requestId}`);
+    console.log(`COOP1: ${coop1Completed}, COOP2: ${coop2Completed}, Comments: ${comments}`);
+
+    // Insert COOP verification details
+    const coopVerificationQuery = `
+      INSERT INTO coop_verification (waiver_id, student_id, comments, verified_by)
+      SELECT pw.request_id, pw.submitted_by, ?, ?
+      FROM prerequisite_waivers pw
+      WHERE pw.request_id = ?;
+    `;
+    await db.query(coopVerificationQuery, [comments, verifiedBy, requestId]);
+    console.log('COOP verification details inserted successfully.');
+
+    // Update request status
+    const updateStatusQuery = `
+      UPDATE prerequisite_waivers
+      SET status = 'COOP Review Complete'
+      WHERE request_id = ?;
+    `;
+    const [result] = await db.query(updateStatusQuery, [requestId]);
+    console.log(`Update Status Result for Request ID ${requestId}:`, result);
+
+    if (result.affectedRows === 0) {
+      console.error(`No rows updated for Request ID: ${requestId}`);
+      return res.status(404).json({ msg: 'Waiver request not found or already updated.' });
     }
-  
-    try {
-      const coopVerificationQuery = `
-        INSERT INTO coop_verification (waiver_id, student_id, comments, verified_by)
-        SELECT pw.request_id, pw.submitted_by, ?, ?
-        FROM prerequisite_waivers pw
-        WHERE pw.request_id = ?;
-      `;
-      await db.query(coopVerificationQuery, [comments, verifiedBy, requestId]);
-  
-      const updateStatusQuery = `
-        UPDATE prerequisite_waivers
-        SET status = 'COOP Review Complete'
-        WHERE request_id = ?;
-      `;
-      const [result] = await db.query(updateStatusQuery, [requestId]);
-  
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ msg: 'Waiver request not found.' });
-      }
-  
-      res.status(200).json({ msg: 'COOP verification completed successfully.' });
-    } catch (err) {
-      console.error('Error updating COOP verification:', err);
-      res.status(500).json({ error: 'Server error' });
-    }
-  };
+
+    res.status(200).json({ msg: 'COOP verification completed successfully.' });
+  } catch (err) {
+    console.error('Error updating COOP verification:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
   
   export const notifyAdvisorAfterCoopReview = async (req, res) => {
     const { requestId } = req.params;
@@ -219,5 +228,52 @@ export const getAllNotesByCoordinator = async (req, res) => {
   } catch (err) {
       console.error('Error fetching coordinator notes:', err);
       res.status(500).json({ error: 'Server error while fetching coordinator notes.' });
+  }
+};
+
+
+// Fetch COOP completion status for a student
+export const getCoopCompletionStatus = async (req, res) => {
+    const { studentId } = req.params;
+
+    try {
+        const query = `
+            SELECT coop_course, completed
+            FROM coop_status
+            WHERE student_id = ?;
+        `;
+        const [rows] = await db.query(query, [studentId]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ msg: 'No COOP data found for the student.' });
+        }
+
+        res.status(200).json({ success: true, data: rows });
+    } catch (err) {
+        console.error('Error fetching COOP completion status:', err);
+        res.status(500).json({ error: 'Server error while fetching COOP completion status.' });
+    }
+};
+
+export const updateCoopCompletionStatus = async (req, res) => {
+  const { studentId } = req.params;
+  const { coopCourse, completed } = req.body;
+
+  if (!studentId || !coopCourse || completed === undefined) {
+      return res.status(400).json({ msg: 'Student ID, COOP course, and completion status are required.' });
+  }
+
+  try {
+      const query = `
+          INSERT INTO coop_status (student_id, coop_course, completed)
+          VALUES (?, ?, ?)
+          ON DUPLICATE KEY UPDATE completed = ?;
+      `;
+      await db.query(query, [studentId, coopCourse, completed, completed]);
+
+      res.status(200).json({ msg: 'COOP completion status updated successfully.' });
+  } catch (err) {
+      console.error('Error updating COOP completion status:', err);
+      res.status(500).json({ error: 'Server error while updating COOP completion status.' });
   }
 };

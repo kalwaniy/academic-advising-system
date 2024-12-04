@@ -46,10 +46,11 @@ function CoordinatorDashboard() {
   const handleSelectRequest = (request) => {
     setSelectedRequest(request);
     setComments('');
-    setCoop1Completed(false);
-    setCoop2Completed(false);
+    fetchCoopCompletion(request.submitted_by); // Fetch COOP data for the student
     fetchNotes(request.request_id); // Fetch notes for the selected request
-  };
+};
+
+
 
   // Add a new note
   const handleAddNote = async () => {
@@ -75,34 +76,61 @@ function CoordinatorDashboard() {
     }
   };
 
-  // Handle submitting the COOP verification
-  const handleSubmitVerification = () => {
-    setLoading(true);
-    setError('');
+  
 
-    axios
-      .post(
-        `http://localhost:5000/api/coordinator/coop-requests/${selectedRequest.request_id}/verify`,
-        {
-          comments,
-          coop1Completed,
-          coop2Completed,
-        },
-        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
-      )
-      .then(() => {
-        alert('Verification submitted successfully!');
-        setSelectedRequest(null);
-        setPendingRequests((prev) =>
-          prev.filter((req) => req.request_id !== selectedRequest.request_id)
-        );
-      })
-      .catch((err) => {
-        console.error('Error submitting verification:', err);
-        setError('Failed to submit verification.');
-      })
-      .finally(() => setLoading(false));
-  };
+  const fetchCoopCompletion = async (studentId) => {
+    try {
+        const response = await axios.get(`http://localhost:5000/api/coordinator/coop-completion/${studentId}`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+
+        const coopData = response.data.data.reduce((acc, item) => {
+            acc[item.coop_course] = !!item.completed; // Convert to boolean
+            return acc;
+        }, {});
+
+        setCoop1Completed(coopData['COOP 1'] || false);
+        setCoop2Completed(coopData['COOP 2'] || false);
+    } catch (err) {
+        console.error('Error fetching COOP completion data:', err);
+        setError('Failed to fetch COOP completion data.');
+    }
+};
+
+
+
+const handleSubmitVerification = () => {
+  setLoading(true);
+  setError('');
+
+  console.log('Submitting COOP verification for request:', selectedRequest.request_id);
+
+  axios
+    .post(
+      `http://localhost:5000/api/coordinator/coop-verification/${selectedRequest.request_id}`,
+      {
+        comments,
+        coop1Completed,
+        coop2Completed,
+      },
+      { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+    )
+    .then((response) => {
+      console.log('Verification Response:', response.data);
+
+      alert('Verification submitted successfully!');
+      setSelectedRequest(null);
+      setPendingRequests((prev) =>
+        prev.filter((req) => req.request_id !== selectedRequest.request_id)
+      );
+    })
+    .catch((err) => {
+      console.error('Error submitting verification:', err);
+      setError('Failed to submit verification.');
+    })
+    .finally(() => setLoading(false));
+};
+
 
   return (
     <div className="coordinator-dashboard">
