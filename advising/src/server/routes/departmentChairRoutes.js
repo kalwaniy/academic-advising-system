@@ -5,10 +5,8 @@ import {
 } from '../departmentchair/departmentchaircontroller.js';
 import { getDeptChairDashboard,
   getStudentDetails,
-  getRequestNotes,
    addRequestNote,
   getStudentPastCourses,
-getDeptChairNote,
 sendToFaculty,
 approveRequest,
 rejectRequest,
@@ -22,14 +20,12 @@ router.get('/user-info', verifyToken, getDepartmentChairUserInfo);
 router.get('/dashboard', verifyToken, getDeptChairDashboard);
 router.get('/student-details/:studentId', verifyToken, getStudentDetails);
 // Fetch all notes for a request
-router.get('/notes/:requestId', verifyToken, getRequestNotes);
 
 // Add a new note to a request
 router.post('/notes/:requestId', verifyToken, addRequestNote);
 
 router.get('/student-past-courses/:studentId', verifyToken, getStudentPastCourses);
 
-router.get('/dept-chair-note/:requestId', verifyToken, getDeptChairNote);
 
 router.get('/notes/:requestId', verifyToken, getAllNotesByRequestId);
 

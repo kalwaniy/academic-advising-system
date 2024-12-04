@@ -10,7 +10,7 @@ import { logWithRequestContext } from '../utils/logger.js';
 export const getDeptChairDashboard = async (req, res) => {
   try {
     logWithRequestContext(req, 'info', 'Fetching Dept Chair Dashboard');
-
+    
     // Fetch "In-Review" requests
     const inReviewQuery = `
       SELECT 
@@ -23,7 +23,19 @@ export const getDeptChairDashboard = async (req, res) => {
     `;
     const [inReviewRequests] = await db.query(inReviewQuery);
 
-    console.log('Fetched In-Review Requests:', inReviewRequests); // Debug log
+    // Fetch faculty members for each course
+    const facultyMapping = {};
+    for (const request of inReviewRequests) {
+      const courseCode = request.course_code;
+      const facultyQuery = `
+        SELECT f.university_id, f.first_name, f.last_name, f.email_id
+        FROM faculty_courses AS fc
+        JOIN faculty AS f ON fc.faculty_id = f.university_id
+        WHERE fc.course_code = ?;
+      `;
+      const [facultyRows] = await db.query(facultyQuery, [courseCode]);
+      facultyMapping[request.request_id] = facultyRows; // Map faculty by request_id
+    }
 
     // Fetch "Completed by Faculty" requests
     const completedQuery = `
@@ -37,15 +49,6 @@ export const getDeptChairDashboard = async (req, res) => {
     `;
     const [completedRequests] = await db.query(completedQuery);
 
-    // Fetch faculty members
-    const facultyQuery = `
-      SELECT u.user_id, u.username
-      FROM users u
-      WHERE u.role = 'faculty';
-    `;
-    const [facultyMembers] = await db.query(facultyQuery);
-
-    // Return data for both request categories
     res.status(200).json({
       requests: inReviewRequests,
       completedRequests: completedRequests,
@@ -194,10 +197,9 @@ export const sendToFaculty = async (req, res) => {
   try {
     // Step 1: Fetch faculty details
     const facultyQuery = `
-      SELECT u.user_id, f.university_id, f.email_id, f.first_name, f.last_name
-      FROM users u
-      JOIN faculty f ON u.university_id = f.university_id
-      WHERE u.user_id = ?;
+      SELECT f.university_id, f.email_id, f.first_name, f.last_name
+      FROM faculty AS f
+      WHERE f.university_id = ?;
     `;
     const [facultyRows] = await db.query(facultyQuery, [facultyId]);
 
@@ -207,7 +209,6 @@ export const sendToFaculty = async (req, res) => {
     }
 
     const {
-      user_id: facultyUserId,
       university_id: facultyUniversityId,
       email_id: facultyEmail,
       first_name: firstName,
@@ -221,7 +222,7 @@ export const sendToFaculty = async (req, res) => {
       SET status = 'In Review with Faculty', faculty_id = ?
       WHERE request_id = ?;
     `;
-    const [updateResult] = await db.query(updateQuery, [facultyUserId, requestId]);
+    const [updateResult] = await db.query(updateQuery, [facultyUniversityId, requestId]);
 
     if (updateResult.affectedRows === 0) {
       logWithRequestContext(req, 'warn', `Request with ID: ${requestId} not found or already updated.`);
@@ -234,7 +235,7 @@ export const sendToFaculty = async (req, res) => {
       VALUES (?, ?);
     `;
     const notificationMessage = `You have been assigned a new waiver request (Request ID: ${requestId}) for review.`;
-    await db.query(notificationQuery, [facultyUserId, notificationMessage]);
+    await db.query(notificationQuery, [facultyUniversityId, notificationMessage]);
 
     // Step 4: Send an email notification to the faculty
     const emailSubject = `New Request Assigned for Review (Request ID: ${requestId})`;
@@ -265,6 +266,7 @@ export const sendToFaculty = async (req, res) => {
     res.status(500).json({ error: 'Server error while assigning request.' });
   }
 };
+
 
 // **** Function: approveRequest ****
 export const approveRequest = async (req, res) => {
@@ -368,3 +370,17 @@ export const rejectRequest = async (req, res) => {
   }
 };
 
+// Ensure getAllLogs is exported
+export const getAllLogs = async (req, res) => {
+  logger.info('Fetching all logs...');
+  try {
+    const query = `SELECT * FROM logs ORDER BY timestamp DESC`;
+    const [rows] = await db.query(query);
+
+    logger.info('Fetched Logs', { count: rows.length });
+    res.status(200).json(rows);
+  } catch (error) {
+    logger.error('Error fetching logs', { error: error.message, stack: error.stack });
+    res.status(500).json({ error: 'Server error while fetching logs.' });
+  }
+};

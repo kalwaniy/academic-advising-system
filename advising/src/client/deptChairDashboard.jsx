@@ -19,8 +19,9 @@ function DeptChairDashboard() {
   const [facultyNotes, setFacultyNotes] = useState([]);
   const [deptChairNotes, setDeptChairNotes] = useState([]);
   const [advisorNotes, setAdvisorNotes] = useState([]);
+  const [facultyMapping, setFacultyMapping] = useState({});
 
-  // **** useEffect Hook ****
+
   useEffect(() => {
     const fetchRequests = async () => {
       const token = localStorage.getItem('token');
@@ -28,17 +29,17 @@ function DeptChairDashboard() {
         setError('Authentication error: No token found.');
         return;
       }
-
+  
       try {
         const response = await fetch('http://localhost:5000/api/department-chair/dashboard', {
           headers: { Authorization: `Bearer ${token}` },
         });
-
+  
         if (response.ok) {
           const data = await response.json();
           setRequests(data.requests.filter((req) => req.status === 'In-Review'));
           setCompletedRequests(data.completedRequests);
-          setFacultyMembers(data.facultyMembers);
+          setFacultyMapping(data.facultyMapping || {}); // Set facultyMapping or default to an empty object
         } else {
           const errorData = await response.json();
           setError(errorData.msg || 'Failed to fetch requests.');
@@ -47,9 +48,10 @@ function DeptChairDashboard() {
         setError('Network error: Unable to fetch requests.');
       }
     };
-
+  
     fetchRequests();
-  }, []); // Empty dependency array to run only once
+  }, []);
+   // Empty dependency array to run only once
 
   // **** Function: fetchStudentDetails ****
   const fetchStudentDetails = async (studentId, requestId) => {
@@ -114,24 +116,24 @@ function DeptChairDashboard() {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-  
+
       if (response.ok) {
         const notes = await response.json();
-        console.log('Fetched notes:', notes); // Debugging
-  
-        // Separate notes by role (using case-insensitive comparison)
-        const advisorNotes = notes.filter((note) => note.role.toLowerCase() === 'advisor');
-        const facultyNotes = notes.filter((note) => note.role.toLowerCase() === 'faculty');
-        const deptChairNotes = notes.filter((note) => note.role.toLowerCase() === 'dept_chair');
-  
-        setAdvisorNotes(advisorNotes);
+
+        // Separate notes by role
+        const facultyNotes = notes.filter((note) => note.role === 'faculty');
+        const deptChairNotes = notes.filter((note) => note.role === 'dept_chair');
+        const advisorNotes = notes.filter((note) => note.role === 'Advisor');
+
         setFacultyNotes(facultyNotes);
         setDeptChairNotes(deptChairNotes);
-  
+        setAdvisorNotes(advisorNotes);
+
         // Set the latest advisor note
         setLatestAdvisorNote(
           advisorNotes.length > 0
-            ? advisorNotes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0].note_text
+            ? advisorNotes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
+                .note_text
             : 'No advisor notes available.'
         );
       } else {
@@ -144,7 +146,6 @@ function DeptChairDashboard() {
       alert('Error fetching notes for this request.');
     }
   };
-  
 
   // **** Function: addNote ****
   const addNote = async () => {
@@ -325,8 +326,6 @@ function DeptChairDashboard() {
     </option>
   ))}
 </select>
-
-
                     <button
                       onClick={() => sendToFaculty(request.request_id, selectedFaculty)}
                       className="btn btn-secondary"
