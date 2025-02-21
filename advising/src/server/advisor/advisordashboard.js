@@ -663,5 +663,202 @@ export const uploadCsvFiles = async (req, res) => {
 };
 
 
+export const getAdvisorOverloadRequests = async (req, res) => {
+  try {
+    const advisorId = req.user_id;
+    logger.info(`Fetching overload requests for advisor ${advisorId}`);
+
+    const [studentRows] = await db.query(
+      'SELECT student_id FROM advisor_student_relation WHERE advisor_id = ?',
+      [advisorId]
+    );
+
+    if (studentRows.length === 0) {
+      return res.status(404).json({ msg: 'No students found for this advisor' });
+    }
+
+    const studentIds = studentRows.map((row) => row.student_id);
+
+    const overloadSql = `
+  SELECT
+    co.request_id,
+    co.submitted_by,
+    co.semester,
+    co.total_credits,
+    co.reason,
+    co.overload_subjects,  <-- new
+    co.status,
+    s.first_name,
+    s.last_name
+  FROM course_overloads co
+  JOIN students s ON co.submitted_by = s.university_id
+      WHERE co.submitted_by IN (?)
+      ORDER BY co.request_id DESC
+    `;
+    const [requests] = await db.query(overloadSql, [studentIds]);
+
+    if (requests.length === 0) {
+      return res.status(404).json({ msg: 'No course overload requests found.' });
+    }
+
+    return res.json(requests);
+  } catch (err) {
+    logger.error(`Error fetching advisor overload requests: ${err.message}`);
+    return res.status(500).json({ msg: 'Server error' });
+  }
+};
 
 
+export const getAdvisorOverloadRequestDetails = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+
+    // 1. Basic info from `course_overloads`
+    const overloadSql = `
+      SELECT co.request_id, co.submitted_by, co.semester, co.total_credits, 
+             co.reason, co.status, s.first_name, s.last_name
+      FROM course_overloads co
+      JOIN students s ON co.submitted_by = s.university_id
+      WHERE co.request_id = ?;
+    `;
+    const [rows] = await db.query(overloadSql, [requestId]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ msg: 'Overload request not found' });
+    }
+
+    const requestData = rows[0];
+
+    // 2. Fetch selected courses from `course_overload_courses`
+    const coursesSql = `
+      SELECT coc.course_code, c.course_title
+      FROM course_overload_courses coc
+      JOIN courses c ON coc.course_code = c.course_code
+      WHERE coc.request_id = ?;
+    `;
+    const [courseRows] = await db.query(coursesSql, [requestId]);
+
+    // 3. Attach selected courses
+    requestData.selectedCourses = courseRows || [];
+
+    return res.json(requestData);
+  } catch (err) {
+    console.error('Error fetching overload request details:', err);
+    return res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+
+// In advisorOverloadController.js
+export const updateAdvisorOverloadRequest = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { semester, total_credits, reason, status } = req.body;
+
+    // Basic check
+    if (!semester && !total_credits && !reason && !status) {
+      return res.status(400).json({ msg: 'No fields to update.' });
+    }
+
+    // Build dynamic SQL
+    // (Alternatively, you can just update all columns if they exist)
+    let updateFields = [];
+    let values = [];
+    if (semester !== undefined) {
+      updateFields.push('semester = ?');
+      values.push(semester);
+    }
+    if (total_credits !== undefined) {
+      updateFields.push('total_credits = ?');
+      values.push(total_credits);
+    }
+    if (reason !== undefined) {
+      updateFields.push('reason = ?');
+      values.push(reason);
+    }
+    if (status !== undefined) {
+      updateFields.push('status = ?');
+      values.push(status);
+    }
+
+    const updateSql = `
+      UPDATE course_overloads
+      SET ${updateFields.join(', ')}
+      WHERE request_id = ?
+    `;
+    values.push(requestId);
+
+    const [result] = await db.query(updateSql, values);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ msg: 'Overload request not found.' });
+    }
+
+    return res.json({ msg: 'Overload request updated successfully.' });
+  } catch (err) {
+    console.error('Error updating Overload request:', err);
+    return res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+export const getOverloadNotes = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+
+    const sql = `
+      SELECT 
+        note_id, 
+        note_text AS content, 
+        created_at, 
+        role, 
+        user_id
+      FROM overload_notes
+      WHERE request_id = ?
+      ORDER BY created_at DESC
+    `;
+    const [rows] = await db.query(sql, [requestId]);
+
+    if (!rows.length) {
+      // Return empty array rather than 404, so we can show "no notes yet"
+      return res.status(200).json({ notes: [] });
+    }
+
+    return res.status(200).json({ notes: rows });
+  } catch (err) {
+    console.error('Error fetching Overload notes:', err);
+    return res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+
+export const addOverloadNote = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { content, role } = req.body;
+    const userId = req.user_id; // from token
+
+    if (!content) {
+      return res.status(400).json({ error: 'Note content is required.' });
+    }
+
+    const sql = `
+      INSERT INTO overload_notes (request_id, user_id, role, note_text, created_at)
+      VALUES (?, ?, ?, ?, NOW());
+    `;
+    const [result] = await db.query(sql, [requestId, userId, role || 'Advisor', content]);
+
+    // Return the newly inserted note
+    const [newNoteRows] = await db.query(`
+      SELECT note_id, note_text AS content, created_at, role, user_id
+      FROM overload_notes
+      WHERE note_id = ?
+    `, [result.insertId]);
+
+    if (newNoteRows.length === 0) {
+      return res.status(500).json({ error: 'Failed to retrieve newly added note' });
+    }
+    return res.status(200).json(newNoteRows[0]);
+  } catch (err) {
+    console.error('Error adding Overload note:', err);
+    return res.status(500).json({ error: 'Server error' });
+  }
+};

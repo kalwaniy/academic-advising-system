@@ -8,7 +8,7 @@ import './styles/index.css';
 
 const sections = [
   { title: 'Prerequisite Waiver', icon: '📝', description: 'Click to proceed', link: '/Prerequisite-waiver' },
-  { title: 'StudentInfo', icon: '🎓', description: 'View student information', link: '/student-info' },
+  { title: 'Course Overload', icon: '📚', description: 'Request extra credits', link: '/course-overload' },
   { title: 'Tasks', icon: '⚠', description: 'No current tasks' },
 ];
 

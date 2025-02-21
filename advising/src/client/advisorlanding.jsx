@@ -12,6 +12,7 @@ Modal.setAppElement('#root');
 // Define the sections on the landing page
 const sections = [
   { title: 'Manage Waivers', icon: '📜', description: 'Approve or reject waivers', link: '/advisor-dashboard' },
+  { title: 'Manage Overloads', icon: '📜', description: 'Approve or reject overloads', link: '/advisor-overload' },
   { title: 'Import Student Data', icon: '🎓', description: 'Import student CSV to database', link: '/advisor-csv' },
   { title: 'Tasks', icon: '📋', description: 'Check pending tasks', link: '/advisor-tasks' },
   { title: 'Create Reports', icon: '📊', description: 'Generate waiver statistics', link: '/reports' },

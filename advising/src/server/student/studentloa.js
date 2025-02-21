@@ -3,6 +3,7 @@
 import db from '../db/db.js';
 import { sendEmail } from '../utils/email.js';
 import { evaluateAutoProcessing } from '../utils/autoProcessingRules.js';
+import { evaluateOverloadAutoProcessing } from '../utils/evaluateOverloadAutoProcessing.js';
 import logger, { logWithRequestContext } from '../utils/logger.js';
 
 
@@ -230,36 +231,161 @@ export default submitWaiverRequest;
 
 
 
-// Function to get all available courses
+// Example in getCourses
 const getCourses = async (req, res) => {
   try {
-    console.log('Fetching courses...');
-
-    const coursesQuery = `
-      SELECT course_code, course_title
-      FROM courses;
+    const query = `
+      SELECT course_code, course_title, credits
+      FROM courses
+      ORDER BY course_code;
     `;
-    const [rows] = await db.query(coursesQuery);
-    console.log('Raw Query Result:', rows);
+    const [rows] = await db.query(query);
 
-    if (rows.length === 0) {
-      console.warn('No courses found');
+    if (!rows.length) {
       return res.status(404).json({ msg: 'No courses found' });
     }
 
-    // Format the courses for response
-    const formattedCourses = rows.map((course) => ({
-      course_code: course.course_code,
-      course_title: course.course_title,
-    }));
-
-    console.log('Formatted Courses:', formattedCourses);
-    res.status(200).json(formattedCourses);
-  } catch (err) {
-    console.error('Error fetching courses:', err);
-    res.status(500).json({ msg: 'Server error' });
+    // Return the rows, which now include credits
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error('Error fetching courses:', error);
+    res.status(500).json({ error: 'Server error' });
   }
 };
 
+
+
+const submitCourseOverloadRequest = async (req, res) => {
+  try {
+    console.log('Inside submitCourseOverloadRequest...');
+    const {
+      submitted_by,
+      semester,
+      total_credits,
+      reason,
+      overload_subjects // <-- new field from req.body
+    } = req.body;
+
+    // 'selected_courses' is the JSON string array, e.g. '["CSCI141","ISTE200"]'
+    let selectedCourses = [];
+    if (req.body.selected_courses) {
+      selectedCourses = JSON.parse(req.body.selected_courses);
+    }
+
+    // Basic validation
+    if (!submitted_by || !semester || !reason || !total_credits) {
+      return res.status(400).json({
+        success: false,
+        msg: 'Missing required fields: submitted_by, semester, reason, or total_credits.'
+      });
+    }
+
+    // 1. Evaluate auto-processing criteria (assuming you imported evaluateOverloadAutoProcessing)
+    const evaluationResult = await evaluateOverloadAutoProcessing({
+      submitted_by,
+      total_credits
+    });
+
+    let status = 'Pending';      
+    let autoProcessReason = '';  
+
+    if (evaluationResult.status === 'Rejected') {
+      status = 'Rejected';
+      autoProcessReason = evaluationResult.reason;
+    } else if (evaluationResult.status === 'Error') {
+      return res.status(400).json({
+        success: false,
+        msg: `Auto-processing error: ${evaluationResult.reason}`
+      });
+    }
+
+    console.log(`Auto-processing => status: ${status}, reason: ${autoProcessReason}`);
+
+    // Insert into course_overloads, also storing overload_subjects
+    const insertOverloadSql = `
+      INSERT INTO course_overloads (
+        submitted_by,
+        semester,
+        total_credits,
+        reason,
+        overload_subjects,   -- new column
+        status,
+        auto_process_reason
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+    const [overloadResult] = await db.query(insertOverloadSql, [
+      submitted_by,
+      semester,
+      parseInt(total_credits, 10),
+      reason,
+      overload_subjects, // storing new field
+      status,
+      autoProcessReason
+    ]);
+
+    const newRequestId = overloadResult.insertId;
+    logger.info(`New overload ID: ${newRequestId}, status: ${status}`);
+
+    // Insert the chosen courses
+    const insertCoursesSql = `
+      INSERT INTO course_overload_courses (request_id, course_code)
+      VALUES (?, ?)
+    `;
+    for (const courseCode of selectedCourses) {
+      await db.query(insertCoursesSql, [newRequestId, courseCode]);
+      logger.info(`Inserted course ${courseCode} for Overload ID: ${newRequestId}`);
+    }
+
+    // 4. Optionally send an email to the student
+    const [studentRows] = await db.query(
+      `SELECT email_id, first_name, last_name FROM students WHERE university_id = ?`,
+      [submitted_by]
+    );
+
+    if (studentRows.length) {
+      const { email_id: studentEmail, first_name, last_name } = studentRows[0];
+
+      try {
+        const subject = `Course Overload Request ${status === 'Rejected' ? 'Rejected' : 'Submitted'}`;
+        let emailBody = `
+          Dear ${first_name} ${last_name},
+
+          Your course overload request for the ${semester} semester has been received.
+          Total Credits: ${total_credits}
+          Reason: ${reason}
+        `;
+
+        if (status === 'Rejected') {
+          emailBody += `\n\nWe regret to inform you that it has been automatically rejected due to:\n${autoProcessReason}\n`;
+        } else {
+          emailBody += '\n\nWe will review your request and notify you once a decision is made.\n';
+        }
+
+        emailBody += '\nBest regards,\nUniversity Overload System';
+
+        await sendEmail(studentEmail, subject, emailBody);
+        logger.info(`Email sent to student (${studentEmail}) for Overload Request ID: ${newRequestId}, status: ${status}`);
+      } catch (emailError) {
+        logger.error(`Failed to send Overload email to student (${studentEmail}): ${emailError.message}`);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      msg: `Course overload request submitted. Current status: ${status}`,
+      request_id: newRequestId
+    });
+
+  } catch (err) {
+    console.error('Error in submitCourseOverloadRequest:', err);
+    logger.error(`Error submitting course overload request: ${err.message}`, { error: err });
+    return res.status(500).json({
+      success: false,
+      msg: 'Server error submitting course overload request.'
+    });
+  }
+};
+
+
 // Export all functions as named exports
-export { getStudentData, submitWaiverRequest, getCourses };
+export { getStudentData, submitWaiverRequest, getCourses, submitCourseOverloadRequest }; 

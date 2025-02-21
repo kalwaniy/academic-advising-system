@@ -16,6 +16,11 @@ import {
   addNote,
   uploadCsvFiles,
   sendToStudent, // Import the new controller function
+  getAdvisorOverloadRequests,
+  getAdvisorOverloadRequestDetails,
+  updateAdvisorOverloadRequest,
+  getOverloadNotes,
+  addOverloadNote
 } from '../advisor/advisordashboard.js'; // Import from the advisor folder
 import { verifyToken } from '../middleware/auth.js';
 
@@ -48,6 +53,16 @@ router.put('/send-to-dept-chair/:requestId', verifyToken, sendToDeptChair);
 router.post('/notes/:requestId', verifyToken, addNote);
 
 router.post('/upload-csv', verifyToken, uploadCsvFiles);
+
+router.get('/overload-requests', verifyToken, getAdvisorOverloadRequests);
+router.get('/overload-requests/:requestId', verifyToken, getAdvisorOverloadRequestDetails);
+router.put('/overload-requests/:requestId', verifyToken, updateAdvisorOverloadRequest);
+// GET notes for an overload request
+router.get('/overload-requests/:requestId/notes', verifyToken, getOverloadNotes);
+
+// POST add new note
+router.post('/overload-requests/:requestId/notes', verifyToken, addOverloadNote);
+
 
 // New route for sending notification/email to the student
 router.post('/send-to-student/:requestId', verifyToken, sendToStudent);
