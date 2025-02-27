@@ -1506,3 +1506,29 @@ td button:focus {
   outline: 2px solid #4a90e2; /* Blue outline when focused */
   outline-offset: 2px; /* Offset the outline for better visibility */
 }
+
+/*this for all the action buttons*/
+/* Standardized Action Buttons */
+.action-button {
+  background-color: white; /* No background color */
+  color: black;                  /* Black text */
+  border: 2px solid orange;        /* Black border */
+  padding: 10px 16px;             /* Consistent padding */
+  cursor: pointer;
+  border-radius: 4px;
+  margin: 3px;                    /* Small margin for spacing */
+  transition: all 0.3s ease;
+  width: 140px;                   /* Fixed width */
+  height: 40px;                   /* Fixed height */
+  display: inline-flex;
+  align-items: center;            /* Center text vertically */
+  justify-content: center;        /* Center text horizontally */
+  font-size: 14px;                /* Uniform font size */
+  font-weight: 500;
+}
+
+/* Hover Effect */
+.action-button:hover {
+  background-color: rgb(255, 255, 255); /* Black background on hover */
+  color: rgb(75, 75, 75);            /* White text on hover */
+}
