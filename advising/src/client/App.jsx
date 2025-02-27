@@ -19,6 +19,8 @@ import CoordinatorDashboard from './coordinatordash';
 import Advisorcsv from './advisorcsv'
 import CourseOverload from './CourseOverloadFrom'; 
 import AdvisorOverloadDashboard from './advisorOverloadDashboard';
+import VPLanding from './VPLanding';
+import DeanLanding from './DeanLanding';
 
 // ProtectedRoute component to enforce role-based access control
 function ProtectedRoute({ element: Component, roleRequired }) {
@@ -113,6 +115,13 @@ function App() {
         path="/coordinator-dashboard"
         element={<ProtectedRoute element={<CoordinatorDashboard />} roleRequired="coordinator" />}
       />
+
+<Route
+        path="/vp-landing"
+        element={<ProtectedRoute element={<VPLanding />} roleRequired="vp" />}
+      />
+
+<Route path="/dean-landing" element={<ProtectedRoute element={<DeanLanding />} roleRequired="dean" />} />
 
     </Routes>
 

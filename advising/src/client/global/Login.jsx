@@ -46,7 +46,11 @@ function LoginPage() {
           navigate('/faculty-landing');
         } else if (decodedToken.role === 'coordinator') {
           navigate('/coordinator-dashboard');
-        }else {
+        } else if (decodedToken.role === 'vp') {
+          navigate('/vp-landing');
+        } else if (decodedToken.role === 'dean') {
+          navigate('/dean-landing');
+        } else {
           setError('Role not recognized');
         }
       } else {
@@ -114,4 +118,3 @@ function LoginPage() {
  }
  
  export default LoginPage;
- 
