@@ -20,7 +20,8 @@ import {
   getAdvisorOverloadRequestDetails,
   updateAdvisorOverloadRequest,
   getOverloadNotes,
-  addOverloadNote
+  addOverloadNote,
+  getPendingStats
 } from '../advisor/advisordashboard.js'; // Import from the advisor folder
 import { verifyToken } from '../middleware/auth.js';
 
@@ -66,5 +67,9 @@ router.post('/overload-requests/:requestId/notes', verifyToken, addOverloadNote)
 
 // New route for sending notification/email to the student
 router.post('/send-to-student/:requestId', verifyToken, sendToStudent);
+
+router.get('/pending-stats', verifyToken, getPendingStats);
+
+
 
 export default router;
