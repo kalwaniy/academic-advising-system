@@ -10,7 +10,10 @@ import advisorRoutes from './routes/advisorRoutes.js';
 import departmentChairRoutes from './routes/departmentChairRoutes.js';
 import facultyRoutes from './routes/facultyRoutes.js';
 import coordinatorRoutes from './routes/coordinatorRoutes.js';
-import notificationRoutes from './routes/notificationRoutes.js'
+import notificationRoutes from './routes/notificationRoutes.js';
+
+import vpRoutes from './routes/vpRoutes.js';
+import deanRoutes from './routes/deanRoutes.js';
 
 const app = express();
 
@@ -38,6 +41,10 @@ app.use('/api/department-chair', departmentChairRoutes);
 app.use('/api/faculty', facultyRoutes);
 app.use('/api/coordinator', coordinatorRoutes);
 app.use('/api', notificationRoutes);
+
+app.use('/api', deanRoutes);
+app.use('/api', vpRoutes);
+
 
 // Start server
 app.listen(PORT, () => {

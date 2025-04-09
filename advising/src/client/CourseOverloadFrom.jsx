@@ -174,27 +174,31 @@ function CourseOverload() {
     setFormData({ ...formData, [name]: value });
   };
 
-  // 7. onSubmit
   const handleSubmit = (e) => {
     e.preventDefault();
-
+  
+    if (formData.totalCredits > 22) {
+      const confirmOverload = window.confirm(
+        "You are not eligible to take more than 22 credits. Are you sure you want to continue?"
+      );
+      if (!confirmOverload) {
+        return;
+      }
+    }
+  
     // Build a FormData
     const submitData = new FormData();
     submitData.append('submitted_by', formData.uid);
     submitData.append('semester', formData.semester);
     submitData.append('total_credits', formData.totalCredits);
     submitData.append('reason', formData.reason);
-
-    // Convert focusSubjects into a JSON or comma separated
-    // so the back end can store it in "overload_subjects" column
-    // Example: JSON string
+  
     const focusCodes = formData.focusSubjects.map((f) => f.value);
     submitData.append('overload_subjects', JSON.stringify(focusCodes));
-
-    // Convert selectedCourses for the main list
+  
     const selectedCourseCodes = formData.selectedCourses.map((c) => c.value);
     submitData.append('selected_courses', JSON.stringify(selectedCourseCodes));
-
+  
     fetch('http://localhost:5000/api/course-overload/submit', {
       method: 'POST',
       body: submitData,
@@ -211,7 +215,6 @@ function CourseOverload() {
       .then((data) => {
         if (data.success) {
           alert('Course overload request submitted successfully!');
-          // Optionally navigate or reset form
         } else {
           alert('Error submitting overload request.');
         }
