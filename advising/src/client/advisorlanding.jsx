@@ -61,23 +61,25 @@ function AdvisorLanding() {
 
   // 2. Fetch stats (Pending / In Review) for both waivers & overloads
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await axios.get('http://localhost:5000/api/advisor/pending-stats', {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        });
-        const data = response.data;
-        setWaiversPending(data.waiversPending);
-        setWaiversInReview(data.waiversInReview);
-        setOverloadsPending(data.overloadsPending);
-        setOverloadsInReview(data.overloadsInReview);
-      } catch (error) {
-        console.error('Error fetching stats:', error);
-      }
-    };
-
+   
+// In your fetchStats function:
+// In advisorlanding.jsx, change the fetchStats function to:
+const fetchStats = async () => {
+  try {
+    const response = await axios.get('http://localhost:5000/api/advisor/pending-stats', {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    const data = response.data;
+    setWaiversPending(data.waiversPending);
+    setWaiversInReview(data.waiversInReview);
+    setOverloadsPending(data.overloadsPending);
+    setOverloadsInReview(data.overloadsInReview);
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+  }
+};
     fetchStats();
   }, []);
 

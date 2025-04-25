@@ -21,7 +21,9 @@ import {
   updateAdvisorOverloadRequest,
   getOverloadNotes,
   addOverloadNote,
-  sendToDean
+  sendToDean,
+  getPendingStats,
+  sendToStudentt
 } from '../advisor/advisordashboard.js'; // Import from the advisor folder
 import { verifyToken } from '../middleware/auth.js';
 
@@ -72,5 +74,8 @@ router.post('/send-to-student/:requestId', verifyToken, sendToStudent);
 router.post('/overload-requests/:requestId/send-to-dean', verifyToken, sendToDean);
 
 
+router.post('/overload-requests/:requestId/send-to-student', verifyToken, sendToStudentt);
 
+// Add this to your routes file
+router.get('/pending-stats', verifyToken, getPendingStats);
 export default router;

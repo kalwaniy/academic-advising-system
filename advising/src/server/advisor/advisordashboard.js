@@ -714,7 +714,7 @@ export const getAdvisorOverloadRequestDetails = async (req, res) => {
     // 1. Basic info from `course_overloads`
     const overloadSql = `
       SELECT co.request_id, co.submitted_by, co.semester, co.total_credits, 
-             co.reason, co.status, s.first_name, s.last_name
+             co.reason, co.status, s.first_name, s.last_name, co.overload_subjects
       FROM course_overloads co
       JOIN students s ON co.submitted_by = s.university_id
       WHERE co.request_id = ?;
@@ -959,6 +959,144 @@ export const sendToDean = async (req, res) => {
     });
   } catch (err) {
     console.error('Error sending to Dean:', err);
+    res.status(500).json({ 
+      success: false,
+      msg: 'Server error while processing request'
+    });
+  }
+};
+
+
+// Add this to your advisordashboard.js controller file
+export const getPendingStats = async (req, res) => {
+  try {
+    const advisorId = req.user_id;
+
+    // Get all students assigned to this advisor
+    const [studentRows] = await db.query(
+      'SELECT student_id FROM advisor_student_relation WHERE advisor_id = ?',
+      [advisorId]
+    );
+
+    if (studentRows.length === 0) {
+      return res.status(200).json({
+        waiversPending: 0,
+        waiversInReview: 0,
+        overloadsPending: 0,
+        overloadsInReview: 0
+      });
+    }
+
+    const studentIds = studentRows.map(row => row.student_id);
+
+    // Count waivers
+    const [waiverStats] = await db.query(`
+      SELECT 
+        SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) AS pending,
+        SUM(CASE WHEN status = 'Department Chair Review' THEN 1 ELSE 0 END) AS in_review
+      FROM prerequisite_waivers
+      WHERE submitted_by IN (?)
+    `, [studentIds]);
+
+    // Count overloads - include all statuses that aren't Pending or Final statuses
+    const [overloadStats] = await db.query(`
+      SELECT 
+        SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) AS pending,
+        SUM(CASE WHEN status NOT IN ('Pending', 'Approved', 'Rejected') THEN 1 ELSE 0 END) AS in_review
+      FROM course_overloads
+      WHERE submitted_by IN (?)
+    `, [studentIds]);
+
+    res.status(200).json({
+      waiversPending: waiverStats[0].pending || 0,
+      waiversInReview: waiverStats[0].in_review || 0,
+      overloadsPending: overloadStats[0].pending || 0,
+      overloadsInReview: overloadStats[0].in_review || 0
+    });
+  } catch (err) {
+    console.error('Error fetching pending stats:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+
+export const sendToStudentt = async (req, res) => {
+  const { requestId } = req.params;
+  const advisorId = req.user_id;
+
+  try {
+    // 1. Verify request exists and belongs to advisor's students
+    const verifyQuery = `
+      SELECT 
+        co.request_id, 
+        co.status, 
+        co.semester,
+        co.total_credits,
+        co.reason,
+        s.university_id as student_id,
+        s.first_name, 
+        s.last_name, 
+        s.email_id
+      FROM course_overloads co
+      JOIN students s ON co.submitted_by = s.university_id
+      JOIN advisor_student_relation asr ON s.university_id = asr.student_id
+      WHERE co.request_id = ? AND asr.advisor_id = ?;
+    `;
+    const [results] = await db.query(verifyQuery, [requestId, advisorId]);
+
+    if (results.length === 0) {
+      return res.status(404).json({ msg: 'Request not found or not authorized' });
+    }
+
+    const request = results[0];
+
+    // 2. Check if status is either Approved or Rejected
+    if (!['Approved', 'Rejected'].includes(request.status)) {
+      return res.status(400).json({ 
+        msg: 'Only Approved or Rejected requests can be sent to the student.' 
+      });
+    }
+
+    // 3. Create notification for Student
+    await db.query(
+      `INSERT INTO notifications (user_id, message, is_read, created_at)
+       VALUES (?, ?, 0, NOW())`,
+      [
+        request.student_id, 
+        `Your overload request (ID: ${requestId}) has been ${request.status.toLowerCase()}`
+      ]
+    );
+
+    // 4. Send email to Student
+    const emailSubject = `Overload Request ${request.status} (ID: ${requestId})`;
+    const emailBody = `
+      Dear ${request.first_name} ${request.last_name},
+
+      Your course overload request has been ${request.status.toLowerCase()}.
+
+      Request Details:
+      - Request ID: ${requestId}
+      - Semester: ${request.semester}
+      - Total Credits: ${request.total_credits}
+      - Status: ${request.status}
+      ${request.reason ? `- Reason: ${request.reason}` : ''}
+
+      ${request.status === 'Approved' ? 
+        'Your overload request has been approved. Please proceed with registration.' : 
+        'Your overload request has been rejected. Please consult with your advisor.'}
+
+      Best regards,
+      University Overload System
+    `;
+
+    await sendEmail(request.email_id, emailSubject, emailBody);
+
+    res.status(200).json({ 
+      success: true,
+      msg: `Notification and email sent to student successfully (Status: ${request.status})`
+    });
+  } catch (err) {
+    console.error('Error sending to student:', err);
     res.status(500).json({ 
       success: false,
       msg: 'Server error while processing request'

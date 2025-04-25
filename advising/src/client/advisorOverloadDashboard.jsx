@@ -337,7 +337,36 @@ const handleViewOverloadDetails = async (requestId) => {
       alert(err.message || 'Error sending to Dean');
     }
   };
+  const handleSendToStudent = async (requestId) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setError('No token found. Please log in first.');
+      return;
+    }
   
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/advisor/overload-requests/${requestId}/send-to-student`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.msg || 'Failed to send to student');
+      }
+  
+      alert('Student notified successfully');
+    } catch (err) {
+      console.error('Error:', err);
+      alert(err.message || 'Error notifying student');
+    }
+  };
 
 
   return (
@@ -429,6 +458,16 @@ const handleViewOverloadDetails = async (requestId) => {
   >
     Send to Dean
   </button>
+
+
+  <button
+  onClick={() => handleSendToStudent(req.request_id)}
+  className={`action-button ${!['Approved', 'Rejected'].includes(req.status) ? 'send-to-student-disabled' : 'send-to-student'}`}
+  disabled={!['Approved', 'Rejected'].includes(req.status)}
+  title={!['Approved', 'Rejected'].includes(req.status) ? 'Only approved/rejected requests can be sent to student' : 'Notify student about this decision'}
+>
+  Send to Student
+</button>
                   </td>
                 </tr>
               ))}
@@ -452,7 +491,13 @@ const handleViewOverloadDetails = async (requestId) => {
             <p><strong>Status:</strong> {selectedRequest.status}</p>
 
             {/* Overload Subjects displayed as-is (if you want to parse JSON, define parseOverloadSubjects) */}
-            <p><strong>Overload For:</strong> {selectedRequest.overload_subjects}</p>
+            <p>
+                  <strong>Overload For:</strong>{' '}
+                  {Array.isArray(selectedRequest.overload_subjects)
+                    ? selectedRequest.overload_subjects.join(', ')
+                    : JSON.parse(selectedRequest.overload_subjects).join(', ')
+                  }
+                </p>
 
             {selectedRequest.selectedCourses && selectedRequest.selectedCourses.length > 0 && (
               <>
