@@ -120,17 +120,21 @@ export const getOverloadNotes = async (req, res) => {
         return res.status(400).json({ error: 'Note content is required.' });
       }
   
-      const query = `
-        INSERT INTO overload_notes (request_id, user_id, first_name, last_name, role, note_text, created_at)
-        VALUES (?, ?, ?, ?, NOW());
-      `;
-      
       // Assuming the dean's role is 'Dean' - adjust if needed
       const role = 'Dean';
-      
+      const firstName = 'DefaultFirstName'; // Replace with actual value or logic to get the first name
+      const lastName = 'DefaultLastName'; // Replace with actual value or logic to get the last name
+  
+      const query = `
+        INSERT INTO overload_notes (request_id, user_id, first_name, last_name, role, note_text, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, NOW());
+      `;
+  
       const [result] = await db.query(query, [
         requestId, 
         userId, 
+        firstName, 
+        lastName, 
         role, 
         content
       ]);
