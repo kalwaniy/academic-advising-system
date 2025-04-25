@@ -1018,3 +1018,88 @@ export const getPendingStats = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+
+export const sendToStudentt = async (req, res) => {
+  const { requestId } = req.params;
+  const advisorId = req.user_id;
+
+  try {
+    // 1. Verify request exists and belongs to advisor's students
+    const verifyQuery = `
+      SELECT 
+        co.request_id, 
+        co.status, 
+        co.semester,
+        co.total_credits,
+        co.reason,
+        s.university_id as student_id,
+        s.first_name, 
+        s.last_name, 
+        s.email_id
+      FROM course_overloads co
+      JOIN students s ON co.submitted_by = s.university_id
+      JOIN advisor_student_relation asr ON s.university_id = asr.student_id
+      WHERE co.request_id = ? AND asr.advisor_id = ?;
+    `;
+    const [results] = await db.query(verifyQuery, [requestId, advisorId]);
+
+    if (results.length === 0) {
+      return res.status(404).json({ msg: 'Request not found or not authorized' });
+    }
+
+    const request = results[0];
+
+    // 2. Check if status is either Approved or Rejected
+    if (!['Approved', 'Rejected'].includes(request.status)) {
+      return res.status(400).json({ 
+        msg: 'Only Approved or Rejected requests can be sent to the student.' 
+      });
+    }
+
+    // 3. Create notification for Student
+    await db.query(
+      `INSERT INTO notifications (user_id, message, is_read, created_at)
+       VALUES (?, ?, 0, NOW())`,
+      [
+        request.student_id, 
+        `Your overload request (ID: ${requestId}) has been ${request.status.toLowerCase()}`
+      ]
+    );
+
+    // 4. Send email to Student
+    const emailSubject = `Overload Request ${request.status} (ID: ${requestId})`;
+    const emailBody = `
+      Dear ${request.first_name} ${request.last_name},
+
+      Your course overload request has been ${request.status.toLowerCase()}.
+
+      Request Details:
+      - Request ID: ${requestId}
+      - Semester: ${request.semester}
+      - Total Credits: ${request.total_credits}
+      - Status: ${request.status}
+      ${request.reason ? `- Reason: ${request.reason}` : ''}
+
+      ${request.status === 'Approved' ? 
+        'Your overload request has been approved. Please proceed with registration.' : 
+        'Your overload request has been rejected. Please consult with your advisor.'}
+
+      Best regards,
+      University Overload System
+    `;
+
+    await sendEmail(request.email_id, emailSubject, emailBody);
+
+    res.status(200).json({ 
+      success: true,
+      msg: `Notification and email sent to student successfully (Status: ${request.status})`
+    });
+  } catch (err) {
+    console.error('Error sending to student:', err);
+    res.status(500).json({ 
+      success: false,
+      msg: 'Server error while processing request'
+    });
+  }
+};

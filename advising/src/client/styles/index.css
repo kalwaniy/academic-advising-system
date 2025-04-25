@@ -2904,3 +2904,14 @@ textarea {
   width: fit-content;
   margin-top: 1rem;
 }
+
+.action-button.send-to-student {
+  background-color: #4caf50;
+  color: white;
+}
+
+.action-button.send-to-student-disabled {
+  background-color: #cccccc;
+  color: #666666;
+  cursor: not-allowed;
+}
