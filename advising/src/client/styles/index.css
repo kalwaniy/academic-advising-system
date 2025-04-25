@@ -858,6 +858,7 @@ textarea.input-field1 {
   background: white;
   border-radius: 15px;
   padding: 10px;
+  width: 1100px;
 }
 
 .dashboard-title {
@@ -2876,9 +2877,9 @@ textarea {
   color: #fff;
 }
 
-.action-button-stack {
+.action-button {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   gap: 1rem;
 }
 

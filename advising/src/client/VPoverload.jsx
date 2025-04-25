@@ -257,13 +257,13 @@ const saveNewNote = async () => {
                         <td>
                           <button
                             onClick={() => handleViewDetails(req.request_id)}
-                            className="action-button view-details"
+                            className="action-button view-details-vp"
                           >
                             View Details
                           </button>
                           <button
                             onClick={() => openNotesModal(req.request_id)}
-                            className="action-button note-request"
+                            className="action-button note-request-vp"
                           >
                             Notes
                           </button>
@@ -274,7 +274,7 @@ const saveNewNote = async () => {
                                   setSelectedRequest(req);
                                   handleDecision('Approved');
                                 }}
-                                className="action-button approve"
+                                className="action-button approve-vp"
                               >
                                 Approve
                               </button>
@@ -283,7 +283,7 @@ const saveNewNote = async () => {
                                   setSelectedRequest(req);
                                   handleDecision('Rejected');
                                 }}
-                                className="action-button reject"
+                                className="action-button reject-vp"
                               >
                                 Reject
                               </button>
