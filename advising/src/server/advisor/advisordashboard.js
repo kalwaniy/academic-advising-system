@@ -965,3 +965,56 @@ export const sendToDean = async (req, res) => {
     });
   }
 };
+
+
+// Add this to your advisordashboard.js controller file
+export const getPendingStats = async (req, res) => {
+  try {
+    const advisorId = req.user_id;
+
+    // Get all students assigned to this advisor
+    const [studentRows] = await db.query(
+      'SELECT student_id FROM advisor_student_relation WHERE advisor_id = ?',
+      [advisorId]
+    );
+
+    if (studentRows.length === 0) {
+      return res.status(200).json({
+        waiversPending: 0,
+        waiversInReview: 0,
+        overloadsPending: 0,
+        overloadsInReview: 0
+      });
+    }
+
+    const studentIds = studentRows.map(row => row.student_id);
+
+    // Count waivers
+    const [waiverStats] = await db.query(`
+      SELECT 
+        SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) AS pending,
+        SUM(CASE WHEN status = 'Department Chair Review' THEN 1 ELSE 0 END) AS in_review
+      FROM prerequisite_waivers
+      WHERE submitted_by IN (?)
+    `, [studentIds]);
+
+    // Count overloads - include all statuses that aren't Pending or Final statuses
+    const [overloadStats] = await db.query(`
+      SELECT 
+        SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) AS pending,
+        SUM(CASE WHEN status NOT IN ('Pending', 'Approved', 'Rejected') THEN 1 ELSE 0 END) AS in_review
+      FROM course_overloads
+      WHERE submitted_by IN (?)
+    `, [studentIds]);
+
+    res.status(200).json({
+      waiversPending: waiverStats[0].pending || 0,
+      waiversInReview: waiverStats[0].in_review || 0,
+      overloadsPending: overloadStats[0].pending || 0,
+      overloadsInReview: overloadStats[0].in_review || 0
+    });
+  } catch (err) {
+    console.error('Error fetching pending stats:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
