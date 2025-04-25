@@ -21,6 +21,8 @@ import CourseOverload from './CourseOverloadFrom';
 import AdvisorOverloadDashboard from './advisorOverloadDashboard';
 import VPLanding from './VPLanding';
 import DeanLanding from './DeanLanding';
+import DeanOverloadPage from './DeanOverloadload';
+import VPOverloadPage from './VPoverload';
 
 // ProtectedRoute component to enforce role-based access control
 function ProtectedRoute({ element: Component, roleRequired }) {
@@ -122,6 +124,12 @@ function App() {
       />
 
 <Route path="/dean-landing" element={<ProtectedRoute element={<DeanLanding />} roleRequired="dean" />} />
+
+
+
+<Route path="/dean-overload" element={<ProtectedRoute element={<DeanOverloadPage />} roleRequired="dean" />} />
+
+<Route path="/vp-overload" element={<ProtectedRoute element={<VPOverloadPage />} roleRequired="vp" />} />
 
     </Routes>
 

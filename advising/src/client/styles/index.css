@@ -1511,6 +1511,7 @@ td button:focus {
   outline-offset: 2px; /* Offset the outline for better visibility */
 }
 
+<<<<<<< Updated upstream
 /*this for all the action buttons*/
 /* Standardized Action Buttons */
 .action-button {
@@ -1844,3 +1845,446 @@ td button:focus {
     width: 100%;  /* Cards become full width on small screens */
   }
 }
+=======
+
+.action-button.send-to-dean {
+  background-color: #5d4b99;
+  color: white;
+  /* ... other styles ... */
+}
+
+.action-button.send-to-dean-disabled {
+  background-color: #cccccc;
+  color: #666666;
+  /* ... other styles ... */
+}
+
+/* Dean Overload Dashboard Styles */
+.dean-overload-dashboard {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.request-container {
+  display: flex;
+  gap: 20px;
+}
+
+.request-list {
+  flex: 1;
+}
+
+.request-details {
+  flex: 1;
+  max-width: 500px;
+}
+
+.request-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.request-table th, .request-table td {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+.request-table th {
+  background-color: #f2f2f2;
+}
+
+.detail-card {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.detail-card h3 {
+  margin-top: 20px;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+}
+
+.action-buttons {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.approve-button {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.reject-button {
+  background-color: #f44336;
+  color: white;
+}
+
+.view-details, .close-button {
+  background-color: #2196F3;
+  color: white;
+}
+
+.status-pending {
+  color: #FF9800;
+  font-weight: bold;
+}
+
+.status-approved {
+  color: #4CAF50;
+  font-weight: bold;
+}
+
+.status-rejected {
+  color: #f44336;
+  font-weight: bold;
+}
+
+.status-dean-review {
+  color: #9C27B0;
+  font-weight: bold;
+}
+
+
+/* Dean Overload Page Styles */
+.dean-overload-page {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.back-button {
+  padding: 8px 16px;
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  background-color: #5a6268;
+}
+
+.content-container {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.overload-content {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.placeholder-box {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px dashed #dee2e6;
+}
+
+.placeholder-box ul {
+  text-align: left;
+  max-width: 500px;
+  margin: 20px auto;
+}
+
+/* Dean Overload Page Styles */
+.dean-overload-page {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.back-button {
+  padding: 8px 16px;
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  background-color: #5a6268;
+}
+
+.overload-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.action-button {
+  padding: 6px 12px;
+  margin-right: 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.view-details {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.approve {
+  background-color: #28a745;
+  color: white;
+}
+
+.reject {
+  background-color: #dc3545;
+  color: white;
+}
+
+.action-button:hover {
+  opacity: 0.9;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-actions {
+  margin-top: 20px;
+  text-align: right;
+}
+
+
+/* Notes Modal Styles */
+.notes-list {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 20px;
+  border: 1px solid #ddd;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.note-item {
+  margin-bottom: 15px;
+}
+
+.note-timestamp {
+  color: #666;
+  font-size: 0.8em;
+  margin-top: 5px;
+}
+
+.note-request {
+  background-color: #6c757d;
+  color: white;
+}
+
+/* Modal textarea */
+.modal-content textarea {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+/* Modal actions */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.modal-actions button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.modal-actions button:first-child {
+  background-color: #28a745;
+  color: white;
+}
+
+.modal-actions button:last-child {
+  background-color: #dc3545;
+  color: white;
+}
+
+/* VP Overload Page Styles */
+.vp-overload-page {
+  padding: 20px;
+}
+
+.vp-overload-page .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.vp-overload-page .back-button {
+  padding: 8px 16px;
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.vp-overload-page .back-button:hover {
+  background-color: #5a6268;
+}
+
+.vp-overload-page .table-container {
+  margin-top: 20px;
+  overflow-x: auto;
+}
+
+.request-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.dean-info {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.courses-section {
+  margin-top: 20px;
+}
+
+.modal-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.action-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.action-button.approve {
+  background-color: #28a745;
+  color: white;
+}
+
+.action-button.reject {
+  background-color: #dc3545;
+  color: white;
+}
+
+.action-button.view-details {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Notes Modal Styles */
+.notes-list {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 20px;
+  border: 1px solid #ddd;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.note-item {
+  margin-bottom: 15px;
+}
+
+.note-timestamp {
+  font-size: 0.8em;
+  color: #666;
+  margin-top: 5px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  resize: vertical;
+}
+>>>>>>> Stashed changes

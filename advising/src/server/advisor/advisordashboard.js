@@ -662,7 +662,6 @@ export const uploadCsvFiles = async (req, res) => {
   }
 };
 
-
 export const getAdvisorOverloadRequests = async (req, res) => {
   try {
     const advisorId = req.user_id;
@@ -680,6 +679,7 @@ export const getAdvisorOverloadRequests = async (req, res) => {
     const studentIds = studentRows.map((row) => row.student_id);
 
     const overloadSql = `
+<<<<<<< Updated upstream
   SELECT
     co.request_id,
     co.submitted_by,
@@ -692,6 +692,20 @@ export const getAdvisorOverloadRequests = async (req, res) => {
     s.last_name
   FROM course_overloads co
   JOIN students s ON co.submitted_by = s.university_id
+=======
+      SELECT
+        co.request_id,
+        co.submitted_by,
+        co.semester,
+        co.total_credits,
+        co.reason,
+        co.overload_subjects,
+        co.status,
+        s.first_name,
+        s.last_name
+      FROM course_overloads co
+      JOIN students s ON co.submitted_by = s.university_id
+>>>>>>> Stashed changes
       WHERE co.submitted_by IN (?)
       ORDER BY co.request_id DESC
     `;
@@ -707,7 +721,6 @@ export const getAdvisorOverloadRequests = async (req, res) => {
     return res.status(500).json({ msg: 'Server error' });
   }
 };
-
 
 export const getAdvisorOverloadRequestDetails = async (req, res) => {
   try {
@@ -864,6 +877,7 @@ export const addOverloadNote = async (req, res) => {
 };
 
 
+<<<<<<< Updated upstream
 /**
  * GET /api/advisor/pending-stats
  * Returns count of waiver & overload requests that are pending or in-review for the advisor's students.
@@ -933,3 +947,108 @@ export const getPendingStats = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+=======
+export const sendToDean = async (req, res) => {
+  const { requestId } = req.params;
+  const advisorId = req.user_id;
+
+  try {
+    // 1. Verify request exists and belongs to advisor's students
+    const verifyQuery = `
+      SELECT 
+        co.request_id, 
+        co.status, 
+        co.semester,
+        co.total_credits,
+        co.reason,
+        s.university_id as student_id,
+        s.first_name, 
+        s.last_name, 
+        s.email_id
+      FROM course_overloads co
+      JOIN students s ON co.submitted_by = s.university_id
+      JOIN advisor_student_relation asr ON s.university_id = asr.student_id
+      WHERE co.request_id = ? AND asr.advisor_id = ?;
+    `;
+    const [results] = await db.query(verifyQuery, [requestId, advisorId]);
+
+    if (results.length === 0) {
+      return res.status(404).json({ msg: 'Request not found or not authorized' });
+    }
+
+    const request = results[0];
+
+    // 2. REMOVED status check - now accepts any status except "Dean Review"
+    if (request.status === 'Dean Review') {
+      return res.status(400).json({ 
+        msg: 'Request is already with the Dean' 
+      });
+    }
+
+    // 3. Update status to "Dean Review"
+    await db.query(
+      `UPDATE course_overloads SET status = 'Dean Review' WHERE request_id = ?`,
+      [requestId]
+    );
+
+    // 4. Get any dean
+    const [dean] = await db.query(`
+      SELECT university_id, email_id, first_name, last_name 
+      FROM dean 
+      LIMIT 1;
+    `);
+
+    if (dean.length > 0) {
+      const deanInfo = dean[0];
+
+      // 5. Create notification for Dean
+      await db.query(
+        `INSERT INTO notifications (user_id, message, is_read, created_at)
+         VALUES (?, ?, 0, NOW())`,
+        [
+          deanInfo.university_id, 
+          `Overload request (ID: ${requestId}) from ${request.first_name} ${request.last_name} needs review`
+        ]
+      );
+
+      // 6. Send email to Dean
+      const emailSubject = `Overload Request for Review (ID: ${requestId})`;
+      const emailBody = `
+        Dear ${deanInfo.first_name} ${deanInfo.last_name},
+
+        A new course overload request has been submitted for your review.
+
+        Current Status: ${request.status}
+        Student: ${request.first_name} ${request.last_name}
+        Student ID: ${request.student_id}
+        Email: ${request.email_id}
+        
+        Request Details:
+        - Request ID: ${requestId}
+        - Semester: ${request.semester}
+        - Total Credits: ${request.total_credits}
+        - Reason: ${request.reason}
+
+        Please log in to the system to review this request.
+
+        Best regards,
+        University Overload System
+      `;
+
+      await sendEmail(deanInfo.email_id, emailSubject, emailBody);
+    }
+
+    res.status(200).json({ 
+      success: true,
+      msg: 'Request sent to Dean successfully',
+      newStatus: 'Dean Review'
+    });
+  } catch (err) {
+    console.error('Error sending to Dean:', err);
+    res.status(500).json({ 
+      success: false,
+      msg: 'Server error while processing request'
+    });
+  }
+};
+>>>>>>> Stashed changes

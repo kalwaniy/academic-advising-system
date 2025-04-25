@@ -1,0 +1,404 @@
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import './styles/index.css';
+
+
+function DeanOverloadPage() {
+  const navigate = useNavigate();
+  const [overloadRequests, setOverloadRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [notesModalVisible, setNotesModalVisible] = useState(false);
+  const [notes, setNotes] = useState([]);
+  const [newNoteContent, setNewNoteContent] = useState('');
+
+  // Fetch overload requests with "Dean Review" status
+  useEffect(() => {
+    fetchOverloadRequests();
+  }, []);
+
+  const fetchOverloadRequests = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('No token found. Please log in first.');
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch('http://localhost:5000/api/dean/overload-requests', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.msg || 'Failed to fetch Overload Requests.');
+        setLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+      setOverloadRequests(data);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching Overload Requests:', err);
+      setError('Network error: cannot retrieve Overload Requests.');
+      setLoading(false);
+    }
+  };
+
+  // View request details
+  const handleViewDetails = async (requestId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(
+        `http://localhost:5000/api/dean/overload-requests/${requestId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(errorData.msg || 'Error fetching details');
+        return;
+      }
+
+      const data = await response.json();
+      setSelectedRequest(data);
+      setShowDetailsModal(true);
+    } catch (err) {
+      console.error('Error fetching Overload details:', err);
+      alert('Server error');
+    }
+  };
+
+  // Open notes modal and fetch notes
+  const openNotesModal = async (requestId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(
+        `http://localhost:5000/api/dean/overload-requests/${requestId}/notes`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(errorData.msg || 'Error fetching notes');
+        return;
+      }
+
+      const data = await response.json();
+      setNotes(data.notes || []);
+      setSelectedRequest({ request_id: requestId });
+      setNotesModalVisible(true);
+    } catch (err) {
+      console.error('Error fetching notes:', err);
+      alert('Server error');
+    }
+  };
+
+  const saveNewNote = async () => {
+    if (!newNoteContent.trim()) {
+      alert('Note content cannot be empty');
+      return;
+    }
+  
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('You need to log in first');
+        return;
+      }
+  
+      const response = await fetch(
+        `http://localhost:5000/api/dean/overload-requests/${selectedRequest.request_id}/notes`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            content: newNoteContent,
+          }),
+        }
+      );
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error saving note');
+      }
+  
+      const newNote = await response.json();
+      setNotes([newNote, ...notes]);
+      setNewNoteContent('');
+    } catch (err) {
+      console.error('Error saving note:', err);
+      alert(err.message || 'Failed to save note');
+    }
+  };
+
+  // Approve or reject a request
+  const handleDecision = async (requestId, decision) => {
+    if (!window.confirm(`Are you sure you want to ${decision} this request?`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(
+        `http://localhost:5000/api/dean/overload-requests/${requestId}/decision`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status: decision }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(errorData.msg || `Failed to ${decision} request`);
+        return;
+      }
+
+      // Update local state
+      setOverloadRequests(prev =>
+        prev.map(req =>
+          req.request_id === requestId ? { ...req, status: decision } : req
+        )
+      );
+      
+      alert(`Request ${decision} successfully`);
+      setShowDetailsModal(false);
+    } catch (err) {
+      console.error(`Error ${decision} request:`, err);
+      alert('Server error');
+    }
+  };
+
+  const handleSendToVP = async (requestId) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setError('No token found. Please log in first.');
+      return;
+    }
+  
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/overload-requests/${requestId}/send-to-vp`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+  
+      // First check if the response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error(text || 'Invalid response from server');
+      }
+  
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.msg || 'Failed to send to VP');
+      }
+  
+      // Update local state
+      setOverloadRequests(prev => 
+        prev.map(req => 
+          req.request_id === requestId 
+            ? { ...req, status: 'VP Review' } 
+            : req
+        )
+      );
+      
+      alert('Request successfully sent to VP');
+    } catch (err) {
+      console.error('Error:', err);
+      alert(err.message || 'Error sending to VP');
+    }
+  };
+
+  return (
+    <div className="dean-overload-page">
+      <header className="page-header">
+        <h1>Overload Requests Management</h1>
+        <button onClick={() => navigate(-1)} className="back-button">
+          Back to Dashboard
+        </button>
+      </header>
+
+      <div className="content-container">
+        {loading ? (
+          <p>Loading overload requests...</p>
+        ) : error ? (
+          <p className="error">{error}</p>
+        ) : (
+          <div className="overload-content">
+            <h2>Pending Overload Requests</h2>
+            
+            {overloadRequests.length === 0 ? (
+              <p>No overload requests currently pending review.</p>
+            ) : (
+              <div className="table-container">
+                <table className="dashboard-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Student</th>
+                      <th>Semester</th>
+                      <th>Credits</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {overloadRequests.map((req) => (
+                      <tr key={req.request_id}>
+                        <td>{req.request_id}</td>
+                        <td>{req.first_name} {req.last_name}</td>
+                        <td>{req.semester}</td>
+                        <td>{req.total_credits}</td>
+                        <td>{req.status}</td>
+                        <td>
+                          <button
+                            onClick={() => handleViewDetails(req.request_id)}
+                            className="action-button view-details"
+                          >
+                            View Details
+                          </button>
+                          <button
+                            onClick={() => openNotesModal(req.request_id)}
+                            className="action-button note-request"
+                          >
+                            Notes
+                          </button>
+                          {req.status === 'Dean Review' && (
+                            <>
+                              <button
+                                onClick={() => handleDecision(req.request_id, 'Approved')}
+                                className="action-button approve"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => handleDecision(req.request_id, 'Rejected')}
+                                className="action-button reject"
+                              >
+                                Reject
+                              </button>
+                              
+                              <button
+      onClick={() => handleSendToVP(req.request_id)}
+      className={`action-button ${req.status === 'VP Review' ? 'send-to-vp-disabled' : 'send-to-vp'}`}
+      disabled={req.status === 'VP Review'}
+      title={req.status === 'VP Review' ? 'Request is already with the VP' : 'Send this request to the VP'}
+    >
+      Send to VP
+    </button>
+
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Request Details Modal */}
+      {showDetailsModal && selectedRequest && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Overload Request Details</h2>
+            <p><strong>Request ID:</strong> {selectedRequest.request_id}</p>
+            <p><strong>Student:</strong> {selectedRequest.first_name} {selectedRequest.last_name}</p>
+            <p><strong>Semester:</strong> {selectedRequest.semester}</p>
+            <p><strong>Total Credits:</strong> {selectedRequest.total_credits}</p>
+            <p><strong>Reason:</strong> {selectedRequest.reason}</p>
+            <p><strong>Status:</strong> {selectedRequest.status}</p>
+            
+            {selectedRequest.overload_subjects && (
+              <p><strong>Overload Subjects:</strong> {selectedRequest.overload_subjects}</p>
+            )}
+
+            {selectedRequest.selectedCourses && selectedRequest.selectedCourses.length > 0 && (
+              <>
+                <h3>Selected Courses</h3>
+                <ul>
+                  {selectedRequest.selectedCourses.map((course) => (
+                    <li key={course.course_code}>
+                      {course.course_code} - {course.course_title}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+
+            <div className="modal-actions">
+              <button onClick={() => setShowDetailsModal(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notes Modal */}
+      {notesModalVisible && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Notes for Request ID: {selectedRequest.request_id}</h2>
+            <div className="notes-list">
+              {notes.map((note) => (
+                <div key={note.note_id} className="note-item">
+                  <p>
+                    <strong>{note.role}:</strong> {note.content}
+                  </p>
+                  <p className="note-timestamp">
+                    <em>{new Date(note.created_at).toLocaleString()}</em>
+                  </p>
+                  <hr />
+                </div>
+              ))}
+            </div>
+            <h3>Add a New Note</h3>
+            <textarea
+              value={newNoteContent}
+              onChange={(e) => setNewNoteContent(e.target.value)}
+              rows="5"
+              cols="50"
+            />
+            <div className="modal-actions">
+              <button onClick={saveNewNote}>Save Note</button>
+              <button onClick={() => setNotesModalVisible(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default DeanOverloadPage;

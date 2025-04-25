@@ -5,11 +5,21 @@ import NotificationPanel from './NotificationPanel';
 import './styles/index.css';
 
 // Define sections for Dean Landing Page
+// Update the deanSections array to point to the new route
 const deanSections = [
-    { title: 'Faculty Management', icon: '🎓', description: 'Manage faculty and academic policies', link: '/dean-faculty' },
-    { title: 'Student Affairs', icon: '📖', description: 'Oversee student-related decisions', link: '/dean-students' },
-    { title: 'Academic Reports', icon: '📑', description: 'View academic performance and reports', link: '/dean-reports' },
-  ];
+  { 
+    title: 'Overload requests', 
+    icon: '🎓', 
+    description: 'Manage overload requests', 
+    link: '/dean-overload' // Changed from '/dean-faculty'
+  },
+  { 
+    title: 'Student Affairs', 
+    icon: '📖', 
+    description: 'Oversee student-related decisions', 
+    link: '/dean-students' 
+  },
+];
   
   function DeanLanding() {
     const [fullName, setFullName] = useState(''); // Store Dean's full name
@@ -18,7 +28,7 @@ const deanSections = [
     useEffect(() => {
       const fetchDeanInfo = async () => {
         try {
-          const response = await axios.get('http://localhost:5000/api/dean/user-infoo', {
+          const response = await axios.get('http://localhost:5000/api/user-info', {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
@@ -27,6 +37,7 @@ const deanSections = [
           if (response.data) {
             const { firstName, lastName } = response.data;
             setFullName(`${firstName} ${lastName}`);
+
           } else {
             setFullName('Dean');
           }

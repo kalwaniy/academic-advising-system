@@ -94,32 +94,49 @@ function AdvisorOverloadDashboard() {
     });
 
   // 3. View Overload Request Details (including selected courses)
-  const handleViewOverloadDetails = async (requestId) => {
-    const token = localStorage.getItem('token');
-    try {
-      const response = await fetch(
-        `http://localhost:5000/api/advisor/overload-requests/${requestId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        alert(errorData.msg || 'Error fetching details');
-        return;
+// In the advisor's handleViewOverloadDetails function:
+const handleViewOverloadDetails = async (requestId) => {
+  const token = localStorage.getItem('token');
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/advisor/overload-requests/${requestId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
+    );
 
-      const data = await response.json();
-      setSelectedRequest(data);
-      setShowRequestModal(true);
-    } catch (err) {
-      console.error('Error fetching Overload details:', err);
-      alert('Server error');
+    if (!response.ok) {
+      const errorData = await response.json();
+      alert(errorData.msg || 'Error fetching details');
+      return;
     }
-  };
+
+    const data = await response.json();
+    
+    // Also fetch notes
+    const notesResponse = await fetch(
+      `http://localhost:5000/api/advisor/overload-requests/${requestId}/notes`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    
+    if (notesResponse.ok) {
+      const notesData = await notesResponse.json();
+      data.notes = notesData.notes || [];
+    }
+
+    setSelectedRequest(data);
+    setShowRequestModal(true);
+  } catch (err) {
+    console.error('Error fetching Overload details:', err);
+    alert('Server error');
+  }
+};
 
   const closeRequestModal = () => {
     setShowRequestModal(false);
@@ -281,6 +298,48 @@ function AdvisorOverloadDashboard() {
     setStudentDetails(null);
   };
 
+  const handleSendToDean = async (requestId) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setError('No token found. Please log in first.');
+      return;
+    }
+  
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/advisor/overload-requests/${requestId}/send-to-dean`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.msg || 'Failed to send to Dean');
+      }
+  
+      // Update local state
+      setOverloadRequests(prev => 
+        prev.map(req => 
+          req.request_id === requestId 
+            ? { ...req, status: 'Dean Review' } 
+            : req
+        )
+      );
+      
+      alert('Request successfully sent to Dean');
+    } catch (err) {
+      console.error('Error:', err);
+      alert(err.message || 'Error sending to Dean');
+    }
+  };
+  
+
+
   return (
     <div className="advisor-overload-dashboard">
       <h1>Advisor Course Overload Requests</h1>
@@ -360,6 +419,16 @@ function AdvisorOverloadDashboard() {
                     >
                       Student Details
                     </button>
+
+                   
+  <button
+    onClick={() => handleSendToDean(req.request_id)}
+    className={`action-button ${req.status === 'Dean Review' ? 'send-to-dean-disabled' : 'send-to-dean'}`}
+    disabled={req.status === 'Dean Review'}
+    title={req.status === 'Dean Review' ? 'Request is already with the Dean' : 'Send this request to the Dean'}
+  >
+    Send to Dean
+  </button>
                   </td>
                 </tr>
               ))}

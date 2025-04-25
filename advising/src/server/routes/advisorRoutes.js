@@ -21,7 +21,11 @@ import {
   updateAdvisorOverloadRequest,
   getOverloadNotes,
   addOverloadNote,
+<<<<<<< Updated upstream
   getPendingStats
+=======
+  sendToDean
+>>>>>>> Stashed changes
 } from '../advisor/advisordashboard.js'; // Import from the advisor folder
 import { verifyToken } from '../middleware/auth.js';
 
@@ -68,7 +72,12 @@ router.post('/overload-requests/:requestId/notes', verifyToken, addOverloadNote)
 // New route for sending notification/email to the student
 router.post('/send-to-student/:requestId', verifyToken, sendToStudent);
 
+<<<<<<< Updated upstream
 router.get('/pending-stats', verifyToken, getPendingStats);
+=======
+
+router.post('/overload-requests/:requestId/send-to-dean', verifyToken, sendToDean);
+>>>>>>> Stashed changes
 
 
 

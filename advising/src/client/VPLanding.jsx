@@ -8,9 +8,8 @@ import './styles/index.css';
 
 // Define sections for VP Landing Page
 const vpSections = [
-  { title: 'University Policies', icon: '📜', description: 'Review and approve policies', link: '/vp-policies' },
-  { title: 'System Logs', icon: '📊', description: 'Monitor university-wide logs', link: '/vp-logs' },
-  { title: 'Reports', icon: '📈', description: 'View university performance reports', link: '/vp-reports' },
+  { title: 'overload ', icon: '📜', description: 'Review and approve overload requests', link: '/vp-overload' },
+ 
 ];
 
 function VPLanding() {
@@ -20,7 +19,7 @@ function VPLanding() {
   useEffect(() => {
     const fetchVPInfo = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/vp/user-infoo', {
+        const response = await axios.get('http://localhost:5000/api/user-infoo', {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
