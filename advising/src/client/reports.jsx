@@ -104,10 +104,10 @@ const Reports = () => {
                 <>
                     <div className="chart-container">
                         <Bar data={chartData} />
-                    </div>
+                    </div><div className="note-modal-buttons">
                     <button className="download-btn" onClick={handleDownloadExcel}>
                         Download Excel
-                    </button>
+                    </button></div>
                 </>
             )}
         </div>

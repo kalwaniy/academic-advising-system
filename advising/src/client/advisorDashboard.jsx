@@ -632,8 +632,8 @@ const fetchStudentDetails = async (studentId, requestId) => {
           </table>
         </div>
       )}
-
-      <button onClick={closeModal}>Close</button>
+      <div className="note-modal-buttons">
+      <button onClick={closeModal}>Close</button></div>
     </div>
   </div>
 )}
@@ -720,9 +720,9 @@ const fetchStudentDetails = async (studentId, requestId) => {
                   <option value="Pending with COOP">Pending with COOP</option>
                 </select>
               </label>
-            </form>
+            </form><div className="note-modal-buttons">
             <button onClick={handleSaveChanges}>Save Changes</button>
-            <button onClick={() => setEditModalVisible(false)}>Cancel</button>
+            <button onClick={() => setEditModalVisible(false)}>Cancel</button></div>
           </div>
         </div>
       )}

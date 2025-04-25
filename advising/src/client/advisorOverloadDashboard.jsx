@@ -466,7 +466,7 @@ const handleViewOverloadDetails = async (requestId) => {
                 </ul>
               </>
             )}
-            <div className="button-box">
+            <div className="note-modal-buttons">
               <button onClick={closeRequestModal}>Close</button>
             </div>
           </div>
@@ -511,10 +511,10 @@ const handleViewOverloadDetails = async (requestId) => {
                 <option value="Approved">Approved</option>
                 <option value="Rejected">Rejected</option>
               </select>
-            </div>
+            </div><div className="note-modal-buttons">
             <button onClick={handleSaveChanges}>Save</button>
             <button onClick={closeEditModal}>Cancel</button>
-          </div>
+          </div></div>
         </div>
       )}
 
@@ -543,9 +543,10 @@ const handleViewOverloadDetails = async (requestId) => {
               rows="5"
               cols="50"
             />
+            <div className="note-modal-buttons">
             <button onClick={saveNewNote}>Save Note</button>
             <button onClick={closeNotesModal}>Close</button>
-          </div>
+            </div></div>
         </div>
       )}
 
@@ -580,9 +581,8 @@ const handleViewOverloadDetails = async (requestId) => {
                   </tr>
                 ))}
               </tbody>
-            </table>
-
-            <button onClick={closeStudentModal}>Close</button>
+            </table><div className="note-modal-buttons">
+            <button onClick={closeStudentModal}>Close</button></div>
           </div>
         </div>
       )}
