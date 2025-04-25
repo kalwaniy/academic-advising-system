@@ -210,7 +210,18 @@ const saveNewNote = async () => {
       alert('Server error');
     }
   };
-
+  const formatSubjects = (subjectsString) => {
+    try {
+      // Parse the string as JSON if it's in array format
+      const parsed = JSON.parse(subjectsString);
+      if (Array.isArray(parsed)) {
+        return parsed.join(', ');
+      }
+      return subjectsString; // fallback if not an array
+    } catch (e) {
+      return subjectsString; // fallback if not valid JSON
+    }
+  };
   return (
     <div className="vp-overload-page">
       <header className="page-header">
@@ -234,66 +245,64 @@ const saveNewNote = async () => {
             ) : (
               <div className="table-container">
                 <table className="dashboard-table">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Student</th>
-                      <th>Semester</th>
-                      <th>Credits</th>
-                      <th>Status</th>
-                      <th>Reviewed By</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {overloadRequests.map((req) => (
-                      <tr key={req.request_id}>
-                        <td>{req.request_id}</td>
-                        <td>{req.first_name} {req.last_name}</td>
-                        <td>{req.semester}</td>
-                        <td>{req.total_credits}</td>
-                        <td>{req.status}</td>
-                        <td>{req.dean_first_name} {req.dean_last_name}</td>
-                        <td>
-                          <button
-                            onClick={() => handleViewDetails(req.request_id)}
-                            className="action-button view-details-vp"
-                          >
-                            View Details
-                          </button>
-                          <button
-                            onClick={() => openNotesModal(req.request_id)}
-                            className="action-button note-request-vp"
-                          >
-                            Notes
-                          </button>
-                          {req.status === 'VP Review' && (
-                            <>
-                              <button
-                                onClick={() => {
-                                  setSelectedRequest(req);
-                                  handleDecision('Approved');
-                                }}
-                                className="action-button approve-vp"
-                              >
-                                Approve
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setSelectedRequest(req);
-                                  handleDecision('Rejected');
-                                }}
-                                className="action-button reject-vp"
-                              >
-                                Reject
-                              </button>
-                            </>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Student</th>
+      <th>Semester</th>
+      <th>Credits</th>
+      <th>Status</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {overloadRequests.map((req) => (
+      <tr key={req.request_id}>
+        <td>{req.request_id}</td>
+        <td>{req.first_name} {req.last_name}</td>
+        <td>{req.semester}</td>
+        <td>{req.total_credits}</td>
+        <td>{req.status}</td>
+        <td>
+          <button
+            onClick={() => handleViewDetails(req.request_id)}
+            className="action-button view-details-vp"
+          >
+            View Details
+          </button>
+          <button
+            onClick={() => openNotesModal(req.request_id)}
+            className="action-button note-request-vp"
+          >
+            Notes
+          </button>
+          {req.status === 'VP Review' && (
+            <>
+              <button
+                onClick={() => {
+                  setSelectedRequest(req);
+                  handleDecision('Approved');
+                }}
+                className="action-button approve-vp"
+              >
+                Approve
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedRequest(req);
+                  handleDecision('Rejected');
+                }}
+                className="action-button reject-vp"
+              >
+                Reject
+              </button>
+            </>
+          )}
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
               </div>
             )}
           </div>
@@ -320,15 +329,11 @@ const saveNewNote = async () => {
             
             <p><strong>Reason:</strong> {selectedRequest.reason}</p>
             
-            {selectedRequest.overload_subjects && (
-              <p><strong>Overload Subjects:</strong> {selectedRequest.overload_subjects}</p>
-            )}
-
-            <div className="dean-info">
-              <h3>Dean Information</h3>
-              <p><strong>Reviewed by:</strong> {selectedRequest.dean_first_name} {selectedRequest.dean_last_name}</p>
-              <p><strong>Dean Email:</strong> {selectedRequest.dean_email}</p>
-            </div>
+            
+{selectedRequest.overload_subjects && (
+  <p><strong>Overload Subjects:</strong> {formatSubjects(selectedRequest.overload_subjects)}</p>
+)}
+            
 
             {selectedRequest.selectedCourses && selectedRequest.selectedCourses.length > 0 && (
               <div className="courses-section">
