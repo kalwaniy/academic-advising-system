@@ -2290,8 +2290,8 @@ textarea {
 
 
 .action-button.send-to-dean {
-  background-color: white;
-  color: black;
+  background-color: rgb(49, 15, 97);
+  color: white;
   /* ... other styles ... */
 }
 
@@ -2894,4 +2894,13 @@ textarea {
   width: fit-content; /* 👈 makes the box only as wide as needed */
   margin-left: auto;
   margin-right: auto; /* 👈 centers the box horizontally */
+}
+
+.button-box {
+  border: 2px solid orange;
+  border-radius: 8px;
+  padding: 0.75rem;
+  background-color: #fff;
+  width: fit-content;
+  margin-top: 1rem;
 }
