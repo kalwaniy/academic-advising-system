@@ -397,7 +397,7 @@ const handleViewOverloadDetails = async (requestId) => {
                   <td>
                     <button
                       onClick={() => handleViewOverloadDetails(req.request_id)}
-                      className="action-button view-details"
+                      className="action-button vie-details"
                     >
                       Overload Details
                     </button>

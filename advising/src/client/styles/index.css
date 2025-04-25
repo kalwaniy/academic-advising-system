@@ -303,7 +303,7 @@ font-size: 18px; /* Adjust font size as needed */
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
   position: sticky; /* Keeps the notifications in place when scrolling */
   top: 20px; /* Space from the top of the page */
-  max-height: 500px; /* Fixed height for scrollable content */
+  max-height: 450px; /* Fixed height for scrollable content */
   overflow-y: auto; /* Enables scrolling when content overflows */
 }
 
@@ -846,9 +846,10 @@ textarea.input-field1 {
 
 /* Advisor Dashboard Container */
 .advisor-dashboard {
-  max-width: 1200px;
+  width: 1300px;
+  height: 650px;
   background-color: white;
-  margin: 20px auto;
+  margin-right: 40px auto;
   padding: 20px;
   border-radius: 8px;
 }
@@ -1846,8 +1847,8 @@ td button:focus {
 }
 
 .action-button.send-to-dean {
-  background-color: #5d4b99;
-  color: white;
+  background-color: white;
+  color: orange;
   /* ... other styles ... */
 }
 
@@ -2288,8 +2289,8 @@ textarea {
 
 
 .action-button.send-to-dean {
-  background-color: #5d4b99;
-  color: white;
+  background-color: white;
+  color: black;
   /* ... other styles ... */
 }
 
@@ -2811,7 +2812,8 @@ textarea {
 
 .dashboard-container-dean {
   
-  max-width: 95%;
+  max-width: 1000px;
+  background-color: white;
   margin: 2rem auto;
   padding: 2rem;
   border-radius: 1rem;
@@ -2855,4 +2857,40 @@ textarea {
 .card-icon-dean {
   font-size: 2rem;
   margin-bottom: 0.5rem;
+}
+
+.action-button {
+  background-color: #fff;
+  color: #000;
+  border: 2px solid orange;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.action-button:hover {
+  background-color: orange;
+  color: #fff;
+}
+
+.action-button-stack {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+}
+
+
+/*submit button on form*/
+.submit-button-box {
+  margin-top: 0.5rem;
+  padding: 0.15rem;
+  border: 2px solid orange;
+  background-color: #fff;
+  border-radius: 8px;
+  width: fit-content; /* 👈 makes the box only as wide as needed */
+  margin-left: auto;
+  margin-right: auto; /* 👈 centers the box horizontally */
 }

@@ -189,7 +189,9 @@ function PrerequisiteWaiver() {
               <input type="radio" name="coopWaiver" value="yes" checked={formData.coopWaiver === 'yes'} onChange={handleInputChange} /> Yes
               <input type="radio" name="coopWaiver" value="no" checked={formData.coopWaiver === 'no'} onChange={handleInputChange} /> No
             </label>
+            <div className="submit-button-box">
             <button type="submit">Submit</button>
+            </div>
           </form>
         </div>
       </div>

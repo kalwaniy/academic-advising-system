@@ -48,7 +48,7 @@ function DeanLanding() {
   }, [navigate]);
 
   return (
-    <div className="advisor-dashboard">
+    <div className="advisor-dashboard-dean">
       <nav className="navbar">
         <div className="navbar-links">
           <a href="/">Logout</a>
