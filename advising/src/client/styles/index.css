@@ -1511,7 +1511,6 @@ td button:focus {
   outline-offset: 2px; /* Offset the outline for better visibility */
 }
 
-<<<<<<< Updated upstream
 /*this for all the action buttons*/
 /* Standardized Action Buttons */
 .action-button {
@@ -1845,7 +1844,6 @@ td button:focus {
     width: 100%;  /* Cards become full width on small screens */
   }
 }
-=======
 
 .action-button.send-to-dean {
   background-color: #5d4b99;
@@ -2287,7 +2285,6 @@ textarea {
   border-radius: 4px;
   resize: vertical;
 }
->>>>>>> Stashed changes
 
 
 .action-button.send-to-dean {
@@ -2729,4 +2726,133 @@ textarea {
   border: 1px solid #ddd;
   border-radius: 4px;
   resize: vertical;
+}
+
+
+
+
+/*Vp landing*/
+.advisor-dashboard-vp {
+  min-height: 90vh;
+  
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.dashboard-container-vp {
+  background: white;
+  width: 1000px;
+  margin: 2rem auto;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Welcome Header */
+.dashboard-header-vp {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+}
+
+/* Cards + Notification layout */
+.dashboard-content-vp {
+  display: flex;
+  gap: 2rem;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+/* Card container */
+.dashboard-cards-vp {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  flex: 1;
+  padding-right: 25%;
+  padding-left: 10%;
+}
+
+/* Individual card */
+.dashboard-card-clickable-vp {
+  background: white;
+  border-radius: 12px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 2px solid orange;
+}
+
+.dashboard-card-clickable-vp:hover {
+  background: #e2ebff;
+  transform: translateY(-3px);
+}
+
+.card-icon-vp {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Notification panel wrapper */
+.notification-panel-wrapper-vp {
+  flex: 1;
+  max-width: 350px;
+}
+
+
+/*Dean Landing*/
+.dashboard-content-dean {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+
+.dashboard-container-dean {
+  
+  max-width: 95%;
+  margin: 2rem auto;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Welcome Header */
+.dashboard-header-dean {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+}
+
+/* Cards layout */
+.dashboard-cards-dean {
+  display: flex;
+  flex-direction: row; /* side by side */
+  flex-wrap: wrap;
+  gap: 1rem;
+  
+}
+
+/* Individual card */
+.dashboard-card-clickable-dean {
+  background-color: #fff;
+  border: 2px solid orange;
+  border-radius: 12px;
+  padding: 1.5rem;
+  width: 250px; 
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.dashboard-card-clickable-dean:hover {
+  background: #ffe7cc;
+  transform: translateY(-3px);
+}
+
+.card-icon-dean {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
 }

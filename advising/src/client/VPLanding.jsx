@@ -8,22 +8,26 @@ import './styles/index.css';
 
 // Define sections for VP Landing Page
 const vpSections = [
-  { title: 'overload ', icon: '📜', description: 'Review and approve overload requests', link: '/vp-overload' },
- 
+  {
+    title: 'overload ',
+    icon: '📜',
+    description: 'Review and approve overload requests',
+    link: '/vp-overload',
+  },
 ];
 
 function VPLanding() {
-  const [fullName, setFullName] = useState(''); // Store VP's full name
+  const [fullName, setFullName] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchVPInfo = async () => {
       try {
         const response = await axios.get('http://localhost:5000/api/user-infoo', {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          });
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
 
         if (response.data) {
           const { firstName, lastName } = response.data;
@@ -40,26 +44,39 @@ function VPLanding() {
   }, [navigate]);
 
   return (
-    <div className="advisor-dashboard">
+    <div className="advisor-dashboard-vp">
       <nav className="navbar">
         <div className="navbar-links">
           <a href="/">Logout</a>
         </div>
       </nav>
-      <div className="dashboard-container">
-        <header className="dashboard-header">
+
+      <div className="dashboard-container-vp">
+        {/* ✅ Welcome message at the top */}
+        <header className="dashboard-header-vp">
           <h1>Welcome, {fullName || 'Vice President'}!</h1>
         </header>
-        <div className="dashboard-cards">
-          {vpSections.map((section, index) => (
-            <div key={index} className="dashboard-card clickable" onClick={() => navigate(section.link)}>
-              <div className="card-icon">{section.icon}</div>
-              <h3>{section.title}</h3>
-              <p>{section.description}</p>
-            </div>
-          ))}
+
+        {/* ✅ Flex row wrapper for cards + notif panel */}
+        <div className="dashboard-content-vp">
+          <div className="dashboard-cards-vp">
+            {vpSections.map((section, index) => (
+              <div
+                key={index}
+                className="dashboard-card-clickable-vp"
+                onClick={() => navigate(section.link)}
+              >
+                <div className="card-icon-vp">{section.icon}</div>
+                <h3>{section.title}</h3>
+                <p>{section.description}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="notification-panel-wrapper-vp">
+            <NotificationPanel />
+          </div>
         </div>
-        <NotificationPanel />
       </div>
     </div>
   );

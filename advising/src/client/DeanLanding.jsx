@@ -5,13 +5,12 @@ import NotificationPanel from './NotificationPanel';
 import './styles/index.css';
 
 // Define sections for Dean Landing Page
-// Update the deanSections array to point to the new route
 const deanSections = [
   { 
     title: 'Overload requests', 
     icon: '🎓', 
     description: 'Manage overload requests', 
-    link: '/dean-overload' // Changed from '/dean-faculty'
+    link: '/dean-overload' 
   },
   { 
     title: 'Student Affairs', 
@@ -20,50 +19,54 @@ const deanSections = [
     link: '/dean-students' 
   },
 ];
-  
-  function DeanLanding() {
-    const [fullName, setFullName] = useState(''); // Store Dean's full name
-    const navigate = useNavigate();
-  
-    useEffect(() => {
-      const fetchDeanInfo = async () => {
-        try {
-          const response = await axios.get('http://localhost:5000/api/user-info', {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          });
-  
-          if (response.data) {
-            const { firstName, lastName } = response.data;
-            setFullName(`${firstName} ${lastName}`);
 
-          } else {
-            setFullName('Dean');
-          }
-        } catch (error) {
-          console.error('Error fetching Dean info:', error);
-          navigate('/login');
+function DeanLanding() {
+  const [fullName, setFullName] = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchDeanInfo = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/user-info', {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+
+        if (response.data) {
+          const { firstName, lastName } = response.data;
+          setFullName(`${firstName} ${lastName}`);
+        } else {
+          setFullName('Dean');
         }
-      };
-      fetchDeanInfo();
-    }, [navigate]);
-  
-    return (
-      <div className="advisor-dashboard">
-        <nav className="navbar">
-          <div className="navbar-links">
-            <a href="/">Logout</a>
-          </div>
-        </nav>
-        <div className="dashboard-container">
-          <header className="dashboard-header">
-            <h1>Welcome, {fullName || 'Dean'}!</h1>
-          </header>
-          <div className="dashboard-cards">
+      } catch (error) {
+        console.error('Error fetching Dean info:', error);
+        navigate('/login');
+      }
+    };
+    fetchDeanInfo();
+  }, [navigate]);
+
+  return (
+    <div className="advisor-dashboard">
+      <nav className="navbar">
+        <div className="navbar-links">
+          <a href="/">Logout</a>
+        </div>
+      </nav>
+      <div className="dashboard-container-dean">
+        <header className="dashboard-header-dean">
+          <h1>Welcome, {fullName || 'Dean'}!</h1>
+        </header>
+        <div className="dashboard-content-dean">
+          <div className="dashboard-cards-dean">
             {deanSections.map((section, index) => (
-              <div key={index} className="dashboard-card clickable" onClick={() => navigate(section.link)}>
-                <div className="card-icon">{section.icon}</div>
+              <div
+                key={index}
+                className="dashboard-card-clickable-dean"
+                onClick={() => navigate(section.link)}
+              >
+                <div className="card-icon-dean">{section.icon}</div>
                 <h3>{section.title}</h3>
                 <p>{section.description}</p>
               </div>
@@ -72,8 +75,8 @@ const deanSections = [
           <NotificationPanel />
         </div>
       </div>
-    );
-  }
-  
-  export default DeanLanding;
-  
+    </div>
+  );
+}
+
+export default DeanLanding;
