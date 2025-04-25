@@ -153,7 +153,7 @@ background-attachment: fixed;
 display: flex; 
 justify-content: center; 
 align-items: center; 
-height: 100vh; 
+height: 100%; 
 }
 /* Login Page Styles */
 .login-page {
@@ -180,6 +180,7 @@ background-image: url(orange-corner.png) ;
 background-size: cover; 
 background-position: 100%; 
 margin: 0 auto; 
+margin-top: 150px;
 }
  
  
@@ -282,10 +283,7 @@ display: flex; /* Create a flex container for the links */
 gap: 10px; /* Add spacing between links */ 
 justify-content: flex-end; /* Align links to the right */ 
 margin-right: 20px; /* Adjust the margin to fine-tune the alignment */ 
-/*background-color: white; /* Add a white background to the container */ 
 padding: 8px 15px; /* Increase padding for a slightly larger box */ 
-/*border: 1px solid black; /* Add a border around the container */ 
-/*border-radius: 5px; /* Add rounded corners */ 
 }
  
 .navbar-links a {
@@ -853,6 +851,12 @@ textarea.input-field1 {
   margin: 20px auto;
   padding: 20px;
   border-radius: 8px;
+}
+
+.advisor-overload-dashboard{
+  background: white;
+  border-radius: 15px;
+  padding: 10px;
 }
 
 .dashboard-title {
@@ -1531,4 +1535,312 @@ td button:focus {
 .action-button:hover {
   background-color: rgb(255, 255, 255); /* Black background on hover */
   color: rgb(75, 75, 75);            /* White text on hover */
+}
+
+
+
+
+/* advisor landing stat box */
+.stats-container {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-start;
+  flex-wrap: nowrap; /* prevent wrapping */
+  overflow-x: auto; /* allow scrolling if needed */
+  padding: 1rem;
+}
+
+.stat-box {
+  width: 120px; /* small fixed width */
+  background-color: #f9f9f9;
+  border-radius: 10px;
+  padding: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.stat-box h3 {
+  font-size: 0.75rem;
+  color: #444;
+  margin-bottom: 0.4rem;
+}
+
+.stat-box span {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #222;
+}
+
+
+
+/* General modal overlay for notes and rest */
+.modal-overlay,
+.modal-note1 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+  z-index: 1000;
+}
+
+/* Modal content container */
+.modal-content.note1-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 50%;
+  max-height: 80%;
+  overflow-y: auto;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Title styling */
+.note1-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 20px;
+  text-align: center;
+  color: #333;
+}
+
+/* Notes list container */
+.notes-list.note1-list {
+  margin-bottom: 20px;
+}
+
+/* Individual note styling */
+.note1-item {
+  margin-bottom: 15px;
+}
+
+.note1-item p {
+  margin: 5px 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.note1-item .note1-timestamp {
+  font-style: italic;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.note1-item hr {
+  border: 0.5px solid #ddd;
+  margin-top: 10px;
+}
+
+/* Add new note section */
+.note1-add-title {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.note1-textarea {
+  width: 100%;
+  resize: none;
+  border: 1px solid #ddd;
+  padding: 10px;
+  font-size: 1rem;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  box-sizing: border-box;
+}
+
+/* Button styling */
+.btn {
+  padding: 10px 15px;
+  font-size: 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 10px;
+  border: 1px solid transparent; /* Adding border for consistency */
+}
+
+/* Save button (Submit) */
+.btn-success.note1-save {
+  background-color: white;
+  color: black;
+  border: 1px solid #ddd; /* Light gray border */
+}
+
+.btn-success.note1-save:hover {
+  background-color: orange;
+  color: white;
+  border: 1px solid orange; /* Add orange border on hover */
+}
+
+/* Close button (Cancel) */
+.btn-secondary.note1-close {
+  background-color: white;
+  color: black;
+  border: 1px solid #ddd; /* Light gray border */
+}
+
+.btn-secondary.note1-close:hover {
+  background-color: orange;
+  color: white;
+  border: 1px solid orange; /* Add orange border on hover */
+}
+
+/* Close button position */
+.modal-content.note1-content button {
+  margin-top: 15px;
+}
+
+/* Close button position */
+.modal-content.note1-content button {
+  margin-top: 15px;
+}
+
+/* Media query for smaller screens */
+@media (max-width: 768px) {
+  .modal-content.note1-content {
+    width: 80%;
+    padding: 15px;
+  }
+
+  .note1-textarea {
+    font-size: 0.9rem;
+  }
+}
+
+
+
+/*FAQ*/
+
+/* Main Container (Dashboard) */
+.dashboard-container1,
+.custom-dashboard-wrapper1 {
+  background: white; /* Remove the white background */
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  border-radius: 15px;
+  max-width: 1200px;
+  width: 100%;
+  gap: 20px;
+}
+
+/* Top Row: Contains Main Content (Header & Cards) + Notification Panel */
+.dashboard-top-row1 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  margin-bottom: 40px;
+  align-items: center;
+}
+
+/* Main Content Section (for header and cards) */
+.main-content1 {
+  flex: 1;
+}
+
+/* Dashboard Header */
+.dashboard-header1 {
+  text-align: center;
+  font-size: 1rem;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+/* Cards Container */
+/* Individual Dashboard Cards */
+.dashboard-card1 {
+  width: 180px; /* Reduced width */
+  height: 150px; /* Reduced height */
+  background: white;
+  padding: 15px; /* Reduced padding */
+  border-radius: 8px; /* Slightly rounded rectangular corners */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: transform 0.3s ease;
+  margin-bottom: 15px; /* Reduced margin */
+  border: 2px solid orange; /* Orange border */
+  font-size: 0.9rem; /* Smaller font size for the text */
+  margin-top: 30px;
+}
+
+/* Cards Container */
+.dashboard-cards1 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px; /* Adjust the gap between the cards */
+  justify-content: center;
+  margin-top: 30px;
+}
+
+
+
+.dashboard-card1:hover {
+  transform: scale(1.05);
+}
+
+/* Card Icon */
+.card-icon1 {
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+/* FAQ Section Wrapper */
+.custom-faq-wrapper {
+  width: 100%;
+  margin-top: 20px;
+}
+
+/* FAQ Section Box */
+.faq-section {
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px; /* Rounded corners for FAQ box */
+  border: 2px solid orange; /* Orange border */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-top: 40px;
+}
+
+/* FAQ Title */
+.faq-section h2 {
+  text-align: center;
+  font-size: 1.8rem;
+  margin-bottom: 15px;
+}
+
+/* FAQ Items */
+.faq-item {
+  margin-bottom: 20px;
+}
+
+.faq-item h3 {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+}
+
+.faq-item ul {
+  padding-left: 20px;
+}
+
+.faq-item li {
+  margin-bottom: 8px;
+  line-height: 1.6;
+}
+
+/* Responsive Adjustments for Smaller Screens */
+@media (max-width: 768px) {
+  .dashboard-card1 {
+    width: 100%;  /* Cards become full width on small screens */
+  }
 }

@@ -2,7 +2,7 @@
 /* eslint-disable no-undef */
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios'; 
+import axios from 'axios';
 import NotificationPanel from './NotificationPanel';
 import './styles/index.css';
 
@@ -12,7 +12,7 @@ const sections = [
   { title: 'Tasks', icon: '⚠', description: 'No current tasks' },
 ];
 
-// A simple FAQ component. You can modify the text, structure, or styling as desired.
+// FAQ Component
 function FAQSection() {
   return (
     <div className="faq-section">
@@ -41,18 +41,18 @@ function FAQSection() {
       </div>
 
       <p>
-        For more details about these processes, please refer to the official Student Handbook or 
-        contact your academic advisor. 
+        For more details about these processes, please refer to the official Student Handbook or
+        contact your academic advisor.
       </p>
     </div>
   );
 }
 
+// Main Dashboard Component
 function Dashboard() {
-  const [fullName, setFullName] = useState(''); 
+  const [fullName, setFullName] = useState('');
   const navigate = useNavigate();
 
-  // Fetch user info from the server
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
@@ -61,18 +61,16 @@ function Dashboard() {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
           },
         });
-        
-        if (response.data && response.data.firstName && response.data.lastName) {
+
+        if (response.data?.firstName && response.data?.lastName) {
           const { firstName, lastName } = response.data;
-          console.log('Received user info:', { firstName, lastName });
           setFullName(`${firstName} ${lastName}`);
         } else {
-          console.warn('Incomplete user data received:', response.data);
           setFullName('Student');
         }
       } catch (error) {
         console.error('Error fetching user info:', error);
-        if (error.response && error.response.status === 404) {
+        if (error.response?.status === 404) {
           navigate('/login');
         }
       }
@@ -80,40 +78,43 @@ function Dashboard() {
     fetchUserInfo();
   }, [navigate]);
 
-  // Handle click on sections
   const handleClick = (link) => {
     navigate(link);
   };
 
   return (
-    <div className="dashboard-container">
-      <div className="main-content">
-        <header className="dashboard-header">
-          <h1>Welcome, {fullName || 'Student'}!</h1>
-        </header>
+    <div className="dashboard-container1">
+      <div className="custom-dashboard-wrapper1">
+        <div className="dashboard-top-row1">
+          <div className="main-content1">
+            <header className="dashboard-header1">
+              <h1>Welcome, {fullName || 'Student'}!</h1>
+            </header>
 
-        <div className="dashboard-cards">
-          {sections.map((section, index) => (
-            <div
-              key={index}
-              className={`dashboard-card ${section.link ? 'clickable' : ''}`}
-              onClick={() => section.link && handleClick(section.link)}
-            >
-              <div className="card-icon">{section.icon}</div>
-              <h3>{section.title}</h3>
-              <p>{section.description}</p>
+            <div className="dashboard-cards1">
+              {sections.map((section, index) => (
+                <div
+                  key={index}
+                  className={`dashboard-card1 ${section.link ? 'clickable' : ''}`}
+                  onClick={() => section.link && handleClick(section.link)}
+                >
+                  <div className="card-icon1">{section.icon}</div>
+                  <h3>{section.title}</h3>
+                  <p>{section.description}</p>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+
+          {/* Notification Panel */}
+          <NotificationPanel />
+        </div>
+
+        {/* FAQ Section */}
+        <div className="custom-faq-wrapper">
+          <FAQSection />
         </div>
       </div>
-
-      {/* FAQ Section at bottom */}
-      <FAQSection />
-
-      {/* Notification Panel */}
-      <NotificationPanel />
-
-
     </div>
   );
 }

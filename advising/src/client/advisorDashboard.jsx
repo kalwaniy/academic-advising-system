@@ -505,7 +505,7 @@ const fetchStudentDetails = async (studentId, requestId) => {
   
       {/* Notes Modal */}
       {showModal && selectedRequestId && (
-        <div className="modal note1">
+        <div className="modal-note1">
           <div className="modal-content note1-content">
             <h2 className="note1-title">Notes</h2>
             <div className="notes-list note1-list">
