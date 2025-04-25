@@ -491,7 +491,13 @@ const handleViewOverloadDetails = async (requestId) => {
             <p><strong>Status:</strong> {selectedRequest.status}</p>
 
             {/* Overload Subjects displayed as-is (if you want to parse JSON, define parseOverloadSubjects) */}
-            <p><strong>Overload For:</strong> {selectedRequest.overload_subjects}</p>
+            <p>
+                  <strong>Overload For:</strong>{' '}
+                  {Array.isArray(selectedRequest.overload_subjects)
+                    ? selectedRequest.overload_subjects.join(', ')
+                    : JSON.parse(selectedRequest.overload_subjects).join(', ')
+                  }
+                </p>
 
             {selectedRequest.selectedCourses && selectedRequest.selectedCourses.length > 0 && (
               <>
