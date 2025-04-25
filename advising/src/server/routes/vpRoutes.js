@@ -7,7 +7,8 @@ import { getVPOverloadRequests,
     getVPOverloadRequestDetails,
     handleVPDecision,
 getVPOverloadNotes,
-addVPOverloadNote} from '../VP/vpoverload.js';
+addVPOverloadNote,
+} from '../VP/vpoverload.js';
 
 
 
@@ -22,7 +23,7 @@ router.post('/overload-requests/:requestId/decision', verifyToken, handleVPDecis
 
 
 // Notes routes for VP
-router.get('/:requestId/notes', verifyToken, getVPOverloadNotes);
-router.post('/:requestId/notes', verifyToken , addVPOverloadNote);
+router.get('/overload-requests/:requestId/notes', verifyToken, getVPOverloadNotes);
+router.post('/overload-requests/:requestId/notes', verifyToken , addVPOverloadNote);
 
 export default router;

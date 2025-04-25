@@ -119,8 +119,18 @@ const saveNewNote = async () => {
     return;
   }
 
+  const token = localStorage.getItem('token');
+  if (!token) {
+    alert('User not authenticated. Please log in.');
+    return;
+  }
+
+  if (!selectedRequest || !selectedRequest.request_id) {
+    alert('No request selected.');
+    return;
+  }
+
   try {
-    const token = localStorage.getItem('token');
     const response = await fetch(
       `http://localhost:5000/api/overload-requests/${selectedRequest.request_id}/notes`,
       {
@@ -136,12 +146,22 @@ const saveNewNote = async () => {
     );
 
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
       throw new Error(errorData.error || 'Error saving note');
     }
 
     const data = await response.json();
-    setNotes([data.note, ...notes]);
+    console.log('Server response:', data); // Log the entire response
+
+    // Check if the note is present in the response
+    if (data.note) {
+      console.log('New note added:', data.note); // Log the new note data
+      // Refresh the notes list by fetching the latest notes
+      await openNotesModal(selectedRequest.request_id);
+    } else {
+      console.error('New note data is missing required properties:', data.note);
+    }
+
     setNewNoteContent('');
   } catch (err) {
     console.error('Error saving note:', err);
@@ -351,11 +371,19 @@ const saveNewNote = async () => {
               {notes.map((note) => (
                 <div key={note.note_id} className="note-item">
                   <p>
-                    <strong>{note.role}:</strong> {note.content}
+                    <strong>{note.role ? note.role : 'Unknown Role'}:</strong> {note.content}
                   </p>
                   <p className="note-timestamp">
                     <em>{new Date(note.created_at).toLocaleString()}</em>
                   </p>
+                  <button onClick={() => {
+                    const newContent = prompt('Edit note:', note.content);
+                    if (newContent !== null) {
+                      // updateNote(note.note_id, newContent);
+                    }
+                  }}>
+                    Edit Note
+                  </button>
                   <hr />
                 </div>
               ))}

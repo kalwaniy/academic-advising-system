@@ -302,74 +302,30 @@ export const getVPOverloadNotes = async (req, res) => {
 
 // Add note to an overload request (VP version)
 export const addVPOverloadNote = async (req, res) => {
+  const { requestId } = req.params;
+  const { content } = req.body;
+  const userId = req.user_id;
+  const role = req.userRole;
+
+  if (!content || !requestId || !role) {
+    return res.status(400).json({ error: 'Note content, request ID, and role are required.' });
+  }
+
   try {
-    const { requestId } = req.params;
-    const { content } = req.body;
-    const userId = req.user_id;
-    const { first_name, last_name } = req.user;
-
-    if (!userId) {
-      return res.status(401).json({ 
-        success: false,
-        error: 'User not authenticated' 
-      });
-    }
-
-    if (!content) {
-      return res.status(400).json({ 
-        success: false,
-        error: 'Note content is required.' 
-      });
-    }
-
     const query = `
-      INSERT INTO overload_notes 
-        (request_id, user_id, first_name, last_name, role, note_text, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, NOW());
+      INSERT INTO overload_notes (request_id, user_id, role, note_text, created_at)
+      VALUES (?, ?, ?, ?, NOW());
     `;
-    
-    const role = 'VP';
-    
-    const [result] = await db.query(query, [
-      requestId, 
-      userId, 
-      first_name,
-      last_name,
-      role, 
-      content
-    ]);
+    const [result] = await db.query(query, [requestId, userId, role, content]);
 
-    // Return the newly added note
-    const [newNote] = await db.query(`
-      SELECT 
-        note_id, 
-        role, 
-        note_text AS content, 
-        created_at,
-        first_name,
-        last_name
-      FROM overload_notes
-      WHERE note_id = ?
-    `, [result.insertId]);
-
-    if (newNote.length === 0) {
-      return res.status(500).json({ 
-        success: false,
-        error: 'Failed to retrieve newly added note' 
-      });
+    if (result.affectedRows === 0) {
+      return res.status(500).json({ error: 'Failed to add note.' });
     }
 
-    return res.status(201).json({
-      success: true,
-      note: newNote[0]
-    });
+    res.status(201).json({ msg: 'Note added successfully.' });
   } catch (err) {
     console.error('Error adding overload note:', err);
-    return res.status(500).json({ 
-      success: false,
-      error: 'Server error while adding note',
-      details: err.message
-    });
+    res.status(500).json({ error: 'Server error while adding note.' });
   }
 };
-  
+
