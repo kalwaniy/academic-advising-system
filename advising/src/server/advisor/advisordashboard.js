@@ -679,20 +679,6 @@ export const getAdvisorOverloadRequests = async (req, res) => {
     const studentIds = studentRows.map((row) => row.student_id);
 
     const overloadSql = `
-<<<<<<< Updated upstream
-  SELECT
-    co.request_id,
-    co.submitted_by,
-    co.semester,
-    co.total_credits,
-    co.reason,
-    co.overload_subjects,  
-    co.status,
-    s.first_name,
-    s.last_name
-  FROM course_overloads co
-  JOIN students s ON co.submitted_by = s.university_id
-=======
       SELECT
         co.request_id,
         co.submitted_by,
@@ -705,7 +691,6 @@ export const getAdvisorOverloadRequests = async (req, res) => {
         s.last_name
       FROM course_overloads co
       JOIN students s ON co.submitted_by = s.university_id
->>>>>>> Stashed changes
       WHERE co.submitted_by IN (?)
       ORDER BY co.request_id DESC
     `;
@@ -877,77 +862,6 @@ export const addOverloadNote = async (req, res) => {
 };
 
 
-<<<<<<< Updated upstream
-/**
- * GET /api/advisor/pending-stats
- * Returns count of waiver & overload requests that are pending or in-review for the advisor's students.
- */
-export const getPendingStats = async (req, res) => {
-  try {
-    // 1. Identify the advisor ID from token
-    const advisorId = req.user_id; // from verifyToken middleware
-
-    // 2. Find all the students assigned to this advisor
-    const [studentRows] = await db.query(
-      'SELECT student_id FROM advisor_student_relation WHERE advisor_id = ?',
-      [advisorId]
-    );
-    if (studentRows.length === 0) {
-      return res.json({
-        waiversPending: 0,
-        waiversInReview: 0,
-        overloadsPending: 0,
-        overloadsInReview: 0
-      });
-    }
-    const studentIds = studentRows.map(r => r.student_id);
-
-    // 3. Query Prerequisite Waivers
-    //    (Example statuses)
-    const [waiversPendingRows] = await db.query(`
-      SELECT COUNT(*) AS count
-      FROM prerequisite_waivers
-      WHERE status = 'Pending'
-        AND submitted_by IN (?);
-    `, [studentIds]);
-
-    const [waiversInReviewRows] = await db.query(`
-      SELECT COUNT(*) AS count
-      FROM prerequisite_waivers
-      WHERE status IN ('Pending with COOP', 'COOP Review Complete')
-        AND submitted_by IN (?);
-    `, [studentIds]);
-
-    // 4. Query Course Overloads
-    //    (Adjust statuses as needed)
-    const [overloadsPendingRows] = await db.query(`
-      SELECT COUNT(*) AS count
-      FROM course_overloads
-      WHERE status = 'Pending'
-        AND submitted_by IN (?);
-    `, [studentIds]);
-
-    // If you don't store 'InReview' or 'ManualReview', skip or adapt
-    const [overloadsInReviewRows] = await db.query(`
-      SELECT COUNT(*) AS count
-      FROM course_overloads
-      WHERE status = 'InReview'
-        AND submitted_by IN (?);
-    `, [studentIds]);
-
-    // 5. Return results
-    res.json({
-      waiversPending: waiversPendingRows[0].count || 0,
-      waiversInReview: waiversInReviewRows[0].count || 0,
-      overloadsPending: overloadsPendingRows[0].count || 0,
-      overloadsInReview: overloadsInReviewRows[0].count || 0
-    });
-  } catch (err) {
-    console.error('Error in getPendingStats:', err);
-    res.status(500).json({ error: 'Server error' });
-  }
-};
-=======
 export const sendToDean = async (req, res) => {
   const { requestId } = req.params;
   const advisorId = req.user_id;
@@ -1051,4 +965,3 @@ export const sendToDean = async (req, res) => {
     });
   }
 };
->>>>>>> Stashed changes
