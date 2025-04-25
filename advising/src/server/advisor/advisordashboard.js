@@ -714,7 +714,7 @@ export const getAdvisorOverloadRequestDetails = async (req, res) => {
     // 1. Basic info from `course_overloads`
     const overloadSql = `
       SELECT co.request_id, co.submitted_by, co.semester, co.total_credits, 
-             co.reason, co.status, s.first_name, s.last_name
+             co.reason, co.status, s.first_name, s.last_name, co.overload_subjects
       FROM course_overloads co
       JOIN students s ON co.submitted_by = s.university_id
       WHERE co.request_id = ?;
