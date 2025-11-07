@@ -37,7 +37,7 @@ Each role has access to different views and actions in the approval workflow.
 
 2. Automated Workflow
 
-A request passes through several stages depending on type and academic hierarchy.
+A request passes through several stages depending on the type and academic hierarchy.
 Typical flow:
 
 Student submits a request
@@ -97,3 +97,41 @@ Route definitions
 Database access pattern
 
 Mail service abstraction 
+
+Frontend
+
+React
+
+React Router
+
+CSS modules/stylesheets
+
+Context/state where applicable
+
+Backend
+
+Node.js
+
+Express
+
+MySQL (via mysql2)
+
+Modular controller-based API design
+
+Architecture Summary
+
+The original project followed a client–server architecture:
+
+Frontend:
+React SPA with role-based navigation and component-based UI.
+
+Backend:
+Node.js + Express REST API with:
+
+Middleware for access control
+
+Request validation
+
+Email notifications (abstracted)
+
+MySQL for data storage
