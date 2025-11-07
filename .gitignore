@@ -43,3 +43,16 @@
 /var/package/*
 !/var/package/*.xml
 
+# env & secrets
+# env & secrets
+.env
+*.env
+.env.*.local
+advising/src/server/.env
+advising/src/server/*.env
+
+# env
+.env
+*.env
+.env.*.local
+

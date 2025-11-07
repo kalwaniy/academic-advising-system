@@ -20,7 +20,7 @@ const NotificationPanel = () => {
 
     useEffect(() => {
         fetchNotifications();
-        const interval = setInterval(fetchNotifications, 10000); // Poll every 10 seconds
+        const interval = setInterval(fetchNotifications, 10000); 
         return () => clearInterval(interval);
     }, []);
 

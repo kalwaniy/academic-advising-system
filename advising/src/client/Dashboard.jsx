@@ -1,5 +1,3 @@
-/* eslint-disable no-unused-vars */
-/* eslint-disable no-undef */
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -12,13 +10,11 @@ const sections = [
   { title: 'Tasks', icon: '⚠', description: 'No current tasks' },
 ];
 
-// FAQ Component
+// FAQ Component (unchanged)
 function FAQSection() {
   return (
     <div className="faq-section">
       <h2>Frequently Asked Questions</h2>
-
-      {/* Waiver FAQ */}
       <div className="faq-item">
         <h3>Prerequisite Waiver Conditions</h3>
         <ul>
@@ -28,18 +24,15 @@ function FAQSection() {
           <li>Waivers are typically only granted if your background meets or exceeds the learning outcomes of the prerequisite course.</li>
         </ul>
       </div>
-
-      {/* Overload FAQ */}
       <div className="faq-item">
         <h3>Course Overload Conditions</h3>
         <ul>
-          <li>Usually requires a minimum GPA (e.g., 3.0) or advisor’s recommendation to exceed the normal credit limit.</li>
+          <li>Usually requires a minimum GPA (e.g., 3.0) or advisor's recommendation to exceed the normal credit limit.</li>
           <li>You may be asked to provide a strong justification or reasoning for taking extra credits (e.g., graduating early).</li>
           <li>Approval from department chair or academic advisor may be required based on your total number of credits requested.</li>
           <li>Credit limits are in place to ensure students can handle the workload successfully.</li>
         </ul>
       </div>
-
       <p>
         For more details about these processes, please refer to the official Student Handbook or
         contact your academic advisor.
@@ -48,7 +41,6 @@ function FAQSection() {
   );
 }
 
-// Main Dashboard Component
 function Dashboard() {
   const [fullName, setFullName] = useState('');
   const navigate = useNavigate();
@@ -82,37 +74,51 @@ function Dashboard() {
     navigate(link);
   };
 
-  return (
-    <div className="dashboard-container1">
-      <div className="custom-dashboard-wrapper1">
-        <div className="dashboard-top-row1">
-          <div className="main-content1">
-            <header className="dashboard-header1">
-              <h1>Welcome, {fullName || 'Student'}!</h1>
-            </header>
+  const handleLogout = () => {
+    // Clear the token from local storage
+    localStorage.removeItem('token');
+    // Navigate to the login page
+    navigate('/login');
+  };
 
-            <div className="dashboard-cards1">
-              {sections.map((section, index) => (
-                <div
-                  key={index}
-                  className={`dashboard-card1 ${section.link ? 'clickable' : ''}`}
-                  onClick={() => section.link && handleClick(section.link)}
-                >
-                  <div className="card-icon1">{section.icon}</div>
-                  <h3>{section.title}</h3>
-                  <p>{section.description}</p>
-                </div>
-              ))}
+  return (
+    <div className="student-dashboard">
+      {/* Add the navbar here */}
+      <nav className="navbar">
+        <div className="navbar-links">
+          <a href="#" onClick={handleLogout}>Logout</a>
+        </div>
+      </nav>
+      
+      <div className="dashboard-container1">
+        <div className="custom-dashboard-wrapper1">
+          <div className="dashboard-top-row1">
+            <div className="main-content1">
+              <header className="dashboard-header1">
+                <h1>Welcome, {fullName || 'Student'}!</h1>
+              </header>
+
+              <div className="dashboard-cards1">
+                {sections.map((section, index) => (
+                  <div
+                    key={index}
+                    className={`dashboard-card1 ${section.link ? 'clickable' : ''}`}
+                    onClick={() => section.link && handleClick(section.link)}
+                  >
+                    <div className="card-icon1">{section.icon}</div>
+                    <h3>{section.title}</h3>
+                    <p>{section.description}</p>
+                  </div>
+                ))}
+              </div>
             </div>
+
+            <NotificationPanel />
           </div>
 
-          {/* Notification Panel */}
-          <NotificationPanel />
-        </div>
-
-        {/* FAQ Section */}
-        <div className="custom-faq-wrapper">
-          <FAQSection />
+          <div className="custom-faq-wrapper">
+            <FAQSection />
+          </div>
         </div>
       </div>
     </div>

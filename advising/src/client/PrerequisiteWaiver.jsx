@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Select from 'react-select'; // Import the select component for searchable dropdowns
+import Select from 'react-select'; 
 import './styles/index.css';
 
 function PrerequisiteWaiver() {
@@ -15,16 +15,16 @@ function PrerequisiteWaiver() {
     classRequest: '',
     reason: '',
     detailedReason: '',
-    seniorDesignRequest: 'no', // Default value set to 'no'
-    coopWaiver: 'no', // Default value set to 'no'
+    seniorDesignRequest: 'no', 
+    coopWaiver: 'no', 
     jdDocument: null,
   });
 
-  const [courses, setCourses] = useState([]); // State to store fetched courses
+  const [courses, setCourses] = useState([]); 
 
-  // Fetch student data and courses when the component mounts
+  
   useEffect(() => {
-    // Fetch student data
+    
     fetch('http://localhost:5000/api/student-data', {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
